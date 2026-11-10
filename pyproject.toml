@@ -21,7 +21,8 @@ authors = [
   {name = "Sean", email = "shantianfenghk@gmail.com"},
 ]
 dependencies = [
-  "mcp[cli]>=1.20.0",
+  # The server uses the v1 FastMCP API; mcp 2.x renamed it and changed other APIs.
+  "mcp[cli]>=1.20.0,<2",
   "pydantic>=2.11.0",
   "pydantic-settings>=2.9.0",
   "httpx>=0.28.0",
