@@ -29,7 +29,10 @@ class LiveQuoteRequest(BaseModel):
     )
     platforms: list[Platform] | None = None
     known_urls: dict[str, str] = Field(default_factory=dict)
-    probe_days_ahead: int = Field(default=12, ge=0, le=30)
+    # 0 = quote exactly the requested stay. A positive value lets Booking and Agoda
+    # attempts move the stay forward to find a priced date; the result then reports
+    # the dates actually quoted in selected_checkin / selected_checkout.
+    probe_days_ahead: int = Field(default=0, ge=0, le=30)
     probe_step_days: int = Field(default=3, ge=1, le=7)
 
     @field_validator("market", mode="before")

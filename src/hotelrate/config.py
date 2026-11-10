@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     playwright_user_data_dir_agoda: str = ""
     playwright_user_data_dir_google_hotels: str = ""
     playwright_browser_channel: str = "chromium"
+    # Master switch for hiding automation from the sites crawled (masked webdriver
+    # flag, rotating desktop user agents). Off by default: see core/browser_policy.py.
+    stealth_mode: bool = False
+    # Only consulted when stealth_mode is true.
     playwright_disable_automation_flags: bool = True
 
     default_checkin_offset_days: int = Field(default=7, ge=0, le=365)

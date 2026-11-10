@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from hotelrate.config import Settings
+from hotelrate.core.browser_policy import automation_mask_args
 
 # Where ``playwright install chromium`` puts its binary (macOS / Linux default).
 _CHROMIUM_CACHE = Path.home() / ".cache" / "ms-playwright"
@@ -286,7 +287,7 @@ async def probe_platform_session(platform: str, settings: Settings) -> CheckResu
 
     launch_kwargs: dict[str, object] = {
         "headless": True,
-        "args": ["--disable-blink-features=AutomationControlled"],
+        "args": automation_mask_args(settings),
     }
     channel = settings.playwright_browser_channel.strip().lower()
     if channel and channel != "chromium":

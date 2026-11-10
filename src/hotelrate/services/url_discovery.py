@@ -8,6 +8,11 @@ from urllib.parse import parse_qs, parse_qsl, quote_plus, unquote, urlencode, ur
 import httpx
 
 from hotelrate.config import Settings
+from hotelrate.core.browser_policy import (
+    apply_stealth_scripts,
+    automation_mask_args,
+    http_user_agent,
+)
 from hotelrate.core.market_locale import (
     accept_language_header,
     agoda_locale_path_prefix,
@@ -36,6 +41,9 @@ class UrlDiscoveryService:
         self.settings = settings
         self.logger = logging.getLogger(self.__class__.__name__)
         self.firecrawl = FirecrawlClient(settings)
+
+    def _http_user_agent(self) -> str:
+        return http_user_agent(self.settings, self.SEARCH_USER_AGENT)
 
     async def discover(
         self,
@@ -397,7 +405,7 @@ class UrlDiscoveryService:
                 resp = await client.get(
                     url,
                     headers={
-                        "User-Agent": self.SEARCH_USER_AGENT,
+                        "User-Agent": self._http_user_agent(),
                         "Accept-Language": "en-US,en;q=0.9",
                     },
                 )
@@ -425,7 +433,7 @@ class UrlDiscoveryService:
                 resp = await client.get(
                     url,
                     headers={
-                        "User-Agent": self.SEARCH_USER_AGENT,
+                        "User-Agent": self._http_user_agent(),
                         "Accept-Language": "en-US,en;q=0.9",
                     },
                 )
@@ -467,7 +475,7 @@ class UrlDiscoveryService:
                 resp = await client.get(
                     url,
                     headers={
-                        "User-Agent": self.SEARCH_USER_AGENT,
+                        "User-Agent": self._http_user_agent(),
                         "Accept-Language": "en-US,en;q=0.9",
                     },
                 )
@@ -564,7 +572,7 @@ class UrlDiscoveryService:
                         resp = await client.get(
                             url,
                             headers={
-                                "User-Agent": self.SEARCH_USER_AGENT,
+                                "User-Agent": self._http_user_agent(),
                                 "Accept-Language": "en-US,en;q=0.8",
                             },
                         )
@@ -621,8 +629,9 @@ class UrlDiscoveryService:
             return []
 
         launch_kwargs: dict[str, object] = {"headless": True}
-        if self.settings.playwright_disable_automation_flags:
-            launch_kwargs["args"] = ["--disable-blink-features=AutomationControlled"]
+        mask_args = automation_mask_args(self.settings)
+        if mask_args:
+            launch_kwargs["args"] = mask_args
         channel = self.settings.playwright_browser_channel.strip()
         if channel and channel != "chromium":
             launch_kwargs["channel"] = channel
@@ -631,15 +640,15 @@ class UrlDiscoveryService:
             norm_locale = normalize_bcp47_locale(locale)
             async with async_playwright() as pw:
                 browser = await pw.chromium.launch(**launch_kwargs)
-                context = await browser.new_context(
-                    locale=norm_locale,
-                    user_agent=self.SEARCH_USER_AGENT,
-                    extra_http_headers={"Accept-Language": accept_language_header(norm_locale)},
-                    viewport={"width": 1360, "height": 900},
-                )
-                await context.add_init_script(
-                    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
-                )
+                context_kwargs: dict[str, object] = {
+                    "locale": norm_locale,
+                    "extra_http_headers": {"Accept-Language": accept_language_header(norm_locale)},
+                    "viewport": {"width": 1360, "height": 900},
+                }
+                if self.settings.stealth_mode:
+                    context_kwargs["user_agent"] = self.SEARCH_USER_AGENT
+                context = await browser.new_context(**context_kwargs)
+                await apply_stealth_scripts(context, self.settings)
                 page = await context.new_page()
                 for url in candidates:
                     try:
@@ -1045,7 +1054,7 @@ class UrlDiscoveryService:
                         resp = await client.get(
                             url,
                             headers={
-                                "User-Agent": self.SEARCH_USER_AGENT,
+                                "User-Agent": self._http_user_agent(),
                                 "Accept-Language": "en-US,en;q=0.9",
                             },
                         )

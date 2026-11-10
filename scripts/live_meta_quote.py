@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--booking-url", default="")
     parser.add_argument("--google-url", default="")
     parser.add_argument("--agoda-url", default="")
-    parser.add_argument("--probe-days", type=int, default=12)
+    parser.add_argument("--probe-days", type=int, default=0)
     parser.add_argument("--probe-step", type=int, default=3)
     parser.add_argument(
         "--batch-config",

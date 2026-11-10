@@ -20,6 +20,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from playwright.async_api import Browser, BrowserContext, Page, Playwright, Response
 
 from hotelrate.config import Settings
+from hotelrate.core.browser_policy import apply_stealth_scripts, automation_mask_args
 from hotelrate.core.market_locale import accept_language_header, normalize_bcp47_locale
 from hotelrate.schemas import Platform, RawRateOffer, SearchRequest
 
@@ -146,26 +147,26 @@ class BaseCollector(ABC):
         request: SearchRequest | None = None,
     ) -> tuple[Browser | None, BrowserContext]:
         launch_kwargs: dict[str, Any] = {"headless": self.settings.headless}
-        if self.settings.playwright_disable_automation_flags:
-            launch_kwargs["args"] = [
-                "--disable-blink-features=AutomationControlled",
-                "--disable-dev-shm-usage",
-                "--disable-component-extensions-with-background-pages",
-                "--disable-default-apps",
-                "--disable-extensions",
-                "--disable-sync",
-                "--metrics-recording-only",
-                "--no-first-run",
-            ]
+        launch_kwargs["args"] = [
+            *automation_mask_args(self.settings),
+            "--disable-dev-shm-usage",
+            "--disable-component-extensions-with-background-pages",
+            "--disable-default-apps",
+            "--disable-extensions",
+            "--disable-sync",
+            "--metrics-recording-only",
+            "--no-first-run",
+        ]
 
         channel = self.settings.playwright_browser_channel.strip()
         user_data_dir = self._resolve_user_data_dir()
         locale = normalize_bcp47_locale(request.locale if request else "en-US")
         context_kwargs: dict[str, Any] = {
             "locale": locale,
-            "user_agent": random.choice(self.USER_AGENTS),
             "viewport": {"width": 1360, "height": 900},
         }
+        if self.settings.stealth_mode:
+            context_kwargs["user_agent"] = random.choice(self.USER_AGENTS)
         non_persistent_headers = {
             "Accept-Language": accept_language_header(locale),
             "Upgrade-Insecure-Requests": "1",
@@ -180,9 +181,7 @@ class BaseCollector(ABC):
                 **context_kwargs,
                 **launch_kwargs,
             )
-            await context.add_init_script(
-                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
-            )
+            await apply_stealth_scripts(context, self.settings)
             return None, context
 
         browser = await pw.chromium.launch(**launch_kwargs)
@@ -190,9 +189,7 @@ class BaseCollector(ABC):
             **context_kwargs,
             extra_http_headers=non_persistent_headers,
         )
-        await context.add_init_script(
-            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
-        )
+        await apply_stealth_scripts(context, self.settings)
         return browser, context
 
     def _resolve_user_data_dir(self) -> str:

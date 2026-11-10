@@ -12,6 +12,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from hotelrate.config import Settings
+from hotelrate.core.browser_policy import automation_mask_args
 
 # ── Platform metadata ─────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ async def open_login_browser(
     launch_kwargs: dict[str, object] = {
         "headless": False,
         "locale": settings.default_locale,
-        "args": ["--disable-blink-features=AutomationControlled"],
+        "args": automation_mask_args(settings),
     }
     channel = settings.playwright_browser_channel.strip().lower()
     if channel and channel != "chromium":

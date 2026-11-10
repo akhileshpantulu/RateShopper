@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "hotelrate": {
+      "command": "hotelrate-mcp"
+    }
+  }
+}

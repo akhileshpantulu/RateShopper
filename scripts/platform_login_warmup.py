@@ -13,6 +13,7 @@ if str(SRC) not in sys.path:
 from playwright.async_api import async_playwright
 
 from hotelrate.config import get_settings
+from hotelrate.core.browser_policy import automation_mask_args
 
 
 DEFAULT_URLS = {
@@ -60,7 +61,7 @@ async def main() -> None:
     launch_kwargs: dict[str, object] = {
         "headless": False,
         "locale": settings.default_locale,
-        "args": ["--disable-blink-features=AutomationControlled"],
+        "args": automation_mask_args(settings),
     }
     if args.channel and args.channel != "chromium":
         launch_kwargs["channel"] = args.channel

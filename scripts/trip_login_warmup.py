@@ -13,6 +13,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from hotelrate.config import get_settings
+from hotelrate.core.browser_policy import automation_mask_args
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,7 +46,7 @@ async def main() -> None:
     launch_kwargs: dict[str, object] = {
         "headless": False,
         "locale": settings.default_locale,
-        "args": ["--disable-blink-features=AutomationControlled"],
+        "args": automation_mask_args(settings),
     }
     if args.channel and args.channel != "chromium":
         launch_kwargs["channel"] = args.channel
