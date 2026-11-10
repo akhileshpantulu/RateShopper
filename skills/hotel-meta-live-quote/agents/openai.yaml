@@ -1,0 +1,9 @@
+interface:
+  display_name: "Hotel Price Comparison"
+  short_description: "Real-time multi-platform hotel price comparison via MCP (Trip.com, Booking.com, Agoda, Google Hotels)."
+  default_prompt: >
+    Use $hotel-meta-live-quote to compare hotel prices across OTA platforms.
+    Available tools: hotel_quote (single hotel), hotel_quote_batch (multiple hotels),
+    list_platforms (see OTAs), health_check (system status).
+    When reporting results, group by platform, highlight the cheapest option,
+    and note whether data is structured (reliable) or fallback (approximate).

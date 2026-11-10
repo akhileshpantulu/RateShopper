@@ -1,0 +1,469 @@
+{
+  "generated_at": "2026-03-17T07:39:24.575950Z",
+  "request": {
+    "hotel_name": "Peace hotel",
+    "city": "Shanghai",
+    "checkin": "2026-03-19",
+    "checkout": "2026-03-20",
+    "adults": 2,
+    "children": 0,
+    "currency": "USD",
+    "platforms": [
+      "trip",
+      "booking",
+      "google_hotels",
+      "agoda"
+    ],
+    "known_urls": {},
+    "probe_days_ahead": 12,
+    "probe_step_days": 3
+  },
+  "results": [
+    {
+      "platform": "trip",
+      "selected_url": "https://www.trip.com/hotels/detail/?hotelId=375539&checkIn=2026-03-19&checkOut=2026-03-20&adult=2&children=0&curr=USD&barcurr=USD",
+      "selected_checkin": "2026-03-19",
+      "selected_checkout": "2026-03-20",
+      "offer_count": 25,
+      "structured_offer_count": 25,
+      "diagnosis": "structured offers captured",
+      "offers": [
+        {
+          "room_name": "Fairmont Suite (Twin Beds)",
+          "final_price": "846.17",
+          "base_price": "798.00",
+          "tax_fee": "47.90",
+          "currency": "USD",
+          "meal_plan": "Great breakfast for US$48.77 (optional)",
+          "cancellation_policy": "30-minute Cancellation Window",
+          "source_url": "https://www.trip.com/restapi/soa2/33269/getHotelRoomListOversea?_fxpcqlniredt=09034095416015954427&x-traceID=09034095416015954427-1773733128830-7409175",
+          "mode": "trip_room_list_oversea"
+        },
+        {
+          "room_name": "Fairmont Suite (Twin Beds)",
+          "final_price": "896.97",
+          "base_price": "846.00",
+          "tax_fee": "50.77",
+          "currency": "USD",
+          "meal_plan": "Includes 2 great breakfasts",
+          "cancellation_policy": "30-minute Cancellation Window",
+          "source_url": "https://www.trip.com/restapi/soa2/33269/getHotelRoomListOversea?_fxpcqlniredt=09034095416015954427&x-traceID=09034095416015954427-1773733128830-7409175",
+          "mode": "trip_room_list_oversea"
+        },
+        {
+          "room_name": "Fairmont Gold Twin Room",
+          "final_price": "536.15",
+          "base_price": "506.00",
+          "tax_fee": "30.35",
+          "currency": "USD",
+          "meal_plan": "Includes 2 great breakfasts",
+          "cancellation_policy": "30-minute Cancellation Window",
+          "source_url": "https://www.trip.com/restapi/soa2/33269/getHotelRoomListOversea?_fxpcqlniredt=09034095416015954427&x-traceID=09034095416015954427-1773733128830-7409175",
+          "mode": "trip_room_list_oversea"
+        },
+        {
+          "room_name": "Fairmont Gold Queen Room",
+          "final_price": "510.31",
+          "base_price": "482.00",
+          "tax_fee": "28.74",
+          "currency": "USD",
+          "meal_plan": "Includes 2 great breakfasts",
+          "cancellation_policy": "US$507.70 cancellation fee",
+          "source_url": "https://www.trip.com/restapi/soa2/33269/getHotelRoomListOversea?_fxpcqlniredt=09034095416015954427&x-traceID=09034095416015954427-1773733128830-7409175",
+          "mode": "trip_room_list_oversea"
+        },
+        {
+          "room_name": "Fairmont Gold Queen Room",
+          "final_price": "530.63",
+          "base_price": "501.00",
+          "tax_fee": "30.04",
+          "currency": "USD",
+          "meal_plan": "Includes 2 great breakfasts",
+          "cancellation_policy": "Free cancellation before 16:00, Mar 18, 2026 (hotel's local time)",
+          "source_url": "https://www.trip.com/restapi/soa2/33269/getHotelRoomListOversea?_fxpcqlniredt=09034095416015954427&x-traceID=09034095416015954427-1773733128830-7409175",
+          "mode": "trip_room_list_oversea"
+        },
+        {
+          "room_name": "Fairmont Gold Queen Room",
+          "final_price": "536.15",
+          "base_price": "506.00",
+          "tax_fee": "30.35",
+          "currency": "USD",
+          "meal_plan": "Includes 2 great breakfasts",
+          "cancellation_policy": "30-minute Cancellation Window",
+          "source_url": "https://www.trip.com/restapi/soa2/33269/getHotelRoomListOversea?_fxpcqlniredt=09034095416015954427&x-traceID=09034095416015954427-1773733128830-7409175",
+          "mode": "trip_room_list_oversea"
+        },
+        {
+          "room_name": "Fairmont Gold Queen Room",
+          "final_price": "568.13",
+          "base_price": "536.00",
+          "tax_fee": "32.16",
+          "currency": "USD",
+          "meal_plan": "Includes 2 great breakfasts",
+          "cancellation_policy": "30-minute Cancellation Window",
+          "source_url": "https://www.trip.com/restapi/soa2/33269/getHotelRoomListOversea?_fxpcqlniredt=09034095416015954427&x-traceID=09034095416015954427-1773733128830-7409175",
+          "mode": "trip_room_list_oversea"
+        },
+        {
+          "room_name": "Fairmont Gold Queen Room",
+          "final_price": "575.39",
+          "base_price": "543.00",
+          "tax_fee": "32.57",
+          "currency": "USD",
+          "meal_plan": "Includes 2 great breakfasts",
+          "cancellation_policy": "30-minute Cancellation Window",
+          "source_url": "https://www.trip.com/restapi/soa2/33269/getHotelRoomListOversea?_fxpcqlniredt=09034095416015954427&x-traceID=09034095416015954427-1773733128830-7409175",
+          "mode": "trip_room_list_oversea"
+        },
+        {
+          "room_name": "Nine Nations Suite",
+          "final_price": "1877.82",
+          "base_price": "1772.00",
+          "tax_fee": "106.29",
+          "currency": "USD",
+          "meal_plan": "Includes 2 great breakfasts",
+          "cancellation_policy": "30-minute Cancellation Window",
+          "source_url": "https://www.trip.com/restapi/soa2/33269/getHotelRoomListOversea?_fxpcqlniredt=09034095416015954427&x-traceID=09034095416015954427-1773733128830-7409175",
+          "mode": "trip_room_list_oversea"
+        },
+        {
+          "room_name": "Nine Nations Suite",
+          "final_price": "2078.53",
+          "base_price": "1961.00",
+          "tax_fee": "117.65",
+          "currency": "USD",
+          "meal_plan": "Includes 2 great breakfasts",
+          "cancellation_policy": "30-minute Cancellation Window",
+          "source_url": "https://www.trip.com/restapi/soa2/33269/getHotelRoomListOversea?_fxpcqlniredt=09034095416015954427&x-traceID=09034095416015954427-1773733128830-7409175",
+          "mode": "trip_room_list_oversea"
+        }
+      ],
+      "attempts": [
+        {
+          "url": "https://www.trip.com/hotels/detail/?hotelId=375539&checkIn=2026-03-19&checkOut=2026-03-20&adult=2&children=0&curr=USD&barcurr=USD",
+          "checkin": "2026-03-19",
+          "checkout": "2026-03-20",
+          "offer_count": 25,
+          "structured_offer_count": 25,
+          "modes": [
+            "trip_room_list_oversea"
+          ],
+          "diagnosis": "structured offers captured; fallback=0; match=0"
+        }
+      ]
+    },
+    {
+      "platform": "booking",
+      "selected_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+      "selected_checkin": "2026-03-19",
+      "selected_checkout": "2026-03-20",
+      "offer_count": 10,
+      "structured_offer_count": 10,
+      "diagnosis": "structured offers captured",
+      "offers": [
+        {
+          "room_name": "Fairmont King Room - Non-Smoking",
+          "final_price": "392.38",
+          "base_price": "392.38",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": null,
+          "cancellation_policy": "Free cancellation",
+          "source_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "mode": "booking_env"
+        },
+        {
+          "room_name": "Fairmont King Room - Non-Smoking",
+          "final_price": "438.01",
+          "base_price": "438.01",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Free cancellation",
+          "source_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "mode": "booking_env"
+        },
+        {
+          "room_name": "Fairmont King Room - Non-Smoking",
+          "final_price": "415.20",
+          "base_price": "415.20",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Free cancellation",
+          "source_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "mode": "booking_env"
+        },
+        {
+          "room_name": "Deluxe King Room - Non-Smoking",
+          "final_price": "422.80",
+          "base_price": "422.80",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": null,
+          "cancellation_policy": "Free cancellation",
+          "source_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "mode": "booking_env"
+        },
+        {
+          "room_name": "Deluxe King Room - Non-Smoking",
+          "final_price": "468.43",
+          "base_price": "468.43",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Free cancellation",
+          "source_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "mode": "booking_env"
+        },
+        {
+          "room_name": "Deluxe King Room - Non-Smoking",
+          "final_price": "445.61",
+          "base_price": "445.61",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Free cancellation",
+          "source_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "mode": "booking_env"
+        },
+        {
+          "room_name": "Fairmont Gold Executive Floor King - Non-Smoking",
+          "final_price": "544.47",
+          "base_price": "544.47",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": null,
+          "cancellation_policy": "Free cancellation",
+          "source_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "mode": "booking_env"
+        },
+        {
+          "room_name": "Fairmont Gold Grand King Executive Room",
+          "final_price": "544.47",
+          "base_price": "544.47",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": null,
+          "cancellation_policy": "Free cancellation",
+          "source_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "mode": "booking_env"
+        },
+        {
+          "room_name": "One-Bedroom Suite",
+          "final_price": "785.99",
+          "base_price": "785.99",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": null,
+          "cancellation_policy": "Free cancellation",
+          "source_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "mode": "booking_env"
+        },
+        {
+          "room_name": "Signature Riverview Suite",
+          "final_price": "1901.09",
+          "base_price": "1901.09",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": null,
+          "cancellation_policy": "Free cancellation",
+          "source_url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "mode": "booking_env"
+        }
+      ],
+      "attempts": [
+        {
+          "url": "https://www.booking.com/hotel/cn/fairmont-peace.html?checkin=2026-03-19&checkout=2026-03-20&group_adults=2&group_children=0&no_rooms=1&selected_currency=USD",
+          "checkin": "2026-03-19",
+          "checkout": "2026-03-20",
+          "offer_count": 10,
+          "structured_offer_count": 10,
+          "modes": [
+            "booking_env"
+          ],
+          "diagnosis": "structured offers captured; fallback=0; match=0"
+        }
+      ]
+    },
+    {
+      "platform": "google_hotels",
+      "selected_url": "https://www.google.com/travel/search?q=Peace+hotel+Shanghai&checkin=2026-03-19&checkout=2026-03-20&adults=2&children=0&hl=en-US&gl=us",
+      "selected_checkin": "2026-03-19",
+      "selected_checkout": "2026-03-20",
+      "offer_count": 4,
+      "structured_offer_count": 0,
+      "diagnosis": "fallback only (firecrawl_fallback)",
+      "offers": [
+        {
+          "room_name": "Web Offer #1",
+          "final_price": "620.00",
+          "base_price": "620.00",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": null,
+          "cancellation_policy": null,
+          "source_url": "https://www.google.com/travel/search?q=Peace+hotel+Shanghai&checkin=2026-03-19&checkout=2026-03-20&adults=2&children=0&hl=en-US&gl=us",
+          "mode": "firecrawl_fallback"
+        },
+        {
+          "room_name": "Web Offer #2",
+          "final_price": "191.00",
+          "base_price": "191.00",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": null,
+          "cancellation_policy": null,
+          "source_url": "https://www.google.com/travel/search?q=Peace+hotel+Shanghai&checkin=2026-03-19&checkout=2026-03-20&adults=2&children=0&hl=en-US&gl=us",
+          "mode": "firecrawl_fallback"
+        },
+        {
+          "room_name": "Web Offer #3",
+          "final_price": "709.00",
+          "base_price": "709.00",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": null,
+          "cancellation_policy": null,
+          "source_url": "https://www.google.com/travel/search?q=Peace+hotel+Shanghai&checkin=2026-03-19&checkout=2026-03-20&adults=2&children=0&hl=en-US&gl=us",
+          "mode": "firecrawl_fallback"
+        },
+        {
+          "room_name": "Web Offer #4",
+          "final_price": "534.00",
+          "base_price": "534.00",
+          "tax_fee": "0",
+          "currency": "USD",
+          "meal_plan": null,
+          "cancellation_policy": null,
+          "source_url": "https://www.google.com/travel/search?q=Peace+hotel+Shanghai&checkin=2026-03-19&checkout=2026-03-20&adults=2&children=0&hl=en-US&gl=us",
+          "mode": "firecrawl_fallback"
+        }
+      ],
+      "attempts": [
+        {
+          "url": "https://www.google.com/travel/search?q=Peace+hotel+Shanghai&checkin=2026-03-19&checkout=2026-03-20&adults=2&children=0&hl=en-US&gl=us",
+          "checkin": "2026-03-19",
+          "checkout": "2026-03-20",
+          "offer_count": 0,
+          "structured_offer_count": 0,
+          "modes": [],
+          "diagnosis": "no offers captured; fallback=0; match=0"
+        },
+        {
+          "url": "https://www.google.com/travel/search?q=Peace+hotel+Shanghai&checkin=2026-03-19&checkout=2026-03-20&adults=2&children=0&hl=en-US&gl=us",
+          "checkin": "2026-03-19",
+          "checkout": "2026-03-20",
+          "offer_count": 4,
+          "structured_offer_count": 0,
+          "modes": [
+            "firecrawl_fallback"
+          ],
+          "diagnosis": "fallback only (firecrawl_fallback); fallback=4; match=0"
+        }
+      ]
+    },
+    {
+      "platform": "agoda",
+      "selected_url": "https://www.agoda.com/fairmont-peace-hotel/hotel/shanghai-cn.html?checkIn=2026-03-19&los=1&adults=2&children=0&rooms=1&currencyCode=USD",
+      "selected_checkin": "2026-03-19",
+      "selected_checkout": "2026-03-20",
+      "offer_count": 7,
+      "structured_offer_count": 7,
+      "diagnosis": "structured offers captured",
+      "offers": [
+        {
+          "room_name": "Fairmont King Non-smoking",
+          "final_price": "436.00",
+          "base_price": "436.00",
+          "tax_fee": "0.00",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Any cancellation received within 2 days prior to the arrival date will incur the first night's charge. Failure to arrive at your hotel or property will be treated as a No-Show and will incur a charge of 100% of the booking value (Hotel policy).",
+          "source_url": "https://www.agoda.com/api/v1/property/room-grid",
+          "mode": "room_grid"
+        },
+        {
+          "room_name": "Deluxe King Non-Smoking",
+          "final_price": "470.00",
+          "base_price": "470.00",
+          "tax_fee": "0.00",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Any cancellation received within 2 days prior to the arrival date will incur the first night's charge. Failure to arrive at your hotel or property will be treated as a No-Show and will incur a charge of 100% of the booking value (Hotel policy).",
+          "source_url": "https://www.agoda.com/api/v1/property/room-grid",
+          "mode": "room_grid"
+        },
+        {
+          "room_name": "Fairmont Gold Executive Floor King Non-Smoking",
+          "final_price": "606.00",
+          "base_price": "606.00",
+          "tax_fee": "0.00",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Any cancellation received within 2 days prior to the arrival date will incur the first night's charge. Failure to arrive at your hotel or property will be treated as a No-Show and will incur a charge of 100% of the booking value (Hotel policy).",
+          "source_url": "https://www.agoda.com/api/v1/property/room-grid",
+          "mode": "room_grid"
+        },
+        {
+          "room_name": "Fairmont Gold Grand Executive Floor King Non-Smoking",
+          "final_price": "606.00",
+          "base_price": "606.00",
+          "tax_fee": "0.00",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Any cancellation received within 2 days prior to the arrival date will incur the first night's charge. Failure to arrive at your hotel or property will be treated as a No-Show and will incur a charge of 100% of the booking value (Hotel policy).",
+          "source_url": "https://www.agoda.com/api/v1/property/room-grid",
+          "mode": "room_grid"
+        },
+        {
+          "room_name": "One Bedroom Suite",
+          "final_price": "1029.00",
+          "base_price": "1029.00",
+          "tax_fee": "0.00",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Any cancellation received within 2 days prior to the arrival date will incur the first night's charge. Failure to arrive at your hotel or property will be treated as a No-Show and will incur a charge of 100% of the booking value (Hotel policy).",
+          "source_url": "https://www.agoda.com/api/v1/property/room-grid",
+          "mode": "room_grid"
+        },
+        {
+          "room_name": "Fairmont Gold Executive Floor 1 King Suite",
+          "final_price": "1029.00",
+          "base_price": "1029.00",
+          "tax_fee": "0.00",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Any cancellation received within 2 days prior to the arrival date will incur the first night's charge. Failure to arrive at your hotel or property will be treated as a No-Show and will incur a charge of 100% of the booking value (Hotel policy).",
+          "source_url": "https://www.agoda.com/api/v1/property/room-grid",
+          "mode": "room_grid"
+        },
+        {
+          "room_name": "Signature Riverview Suite",
+          "final_price": "2115.00",
+          "base_price": "2115.00",
+          "tax_fee": "0.00",
+          "currency": "USD",
+          "meal_plan": "Breakfast included",
+          "cancellation_policy": "Any cancellation received within 2 days prior to the arrival date will incur the first night's charge. Failure to arrive at your hotel or property will be treated as a No-Show and will incur a charge of 100% of the booking value (Hotel policy).",
+          "source_url": "https://www.agoda.com/api/v1/property/room-grid",
+          "mode": "room_grid"
+        }
+      ],
+      "attempts": [
+        {
+          "url": "https://www.agoda.com/fairmont-peace-hotel/hotel/shanghai-cn.html?checkIn=2026-03-19&los=1&adults=2&children=0&rooms=1&currencyCode=USD",
+          "checkin": "2026-03-19",
+          "checkout": "2026-03-20",
+          "offer_count": 7,
+          "structured_offer_count": 7,
+          "modes": [
+            "room_grid"
+          ],
+          "diagnosis": "structured offers captured; fallback=0; match=0"
+        }
+      ]
+    }
+  ]
+}

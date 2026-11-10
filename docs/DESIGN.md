@@ -1,6 +1,8 @@
 # Compset Rate Shopper: Design and Phased Plan
 
-Status: draft for approval. Nothing beyond this document is built yet.
+Status: draft for approval. Revised on 2026-11-10: the project now builds on the imported `hotelrate-crawl` code
+(see [section 12](#12-revision-building-on-hotelrate-crawl)). Sections 2 to 11 are the original plan. Where
+section 12 differs, section 12 applies.
 
 ## 1. Purpose
 
@@ -257,3 +259,102 @@ Each phase ends with a demo and your sign-off before the next starts.
 9. **Daily schedules:** a daily run of a full study is about 1,000 requests a day from one IP. Fine to allow daily, or
    limit daily schedules to the price calendar and keep offers weekly?
 10. **Canary hotel:** any preference? Otherwise I will pick a large, always-open London hotel.
+
+## 12. Revision: building on hotelrate-crawl
+
+### 12.1 What is in the repository now
+
+`hotelrate-crawl` 0.3.0 (MIT) was imported as the code base. Origin and commit are recorded in
+[UPSTREAM.md](../UPSTREAM.md). It provides, working today:
+
+- Four site collectors (Booking.com, Agoda, Trip.com, Google Hotels) that load a hotel page in Chromium through
+  Playwright and return room offers for one hotel and one stay.
+- URL discovery that turns a hotel name and city into candidate page URLs, and a JSON cache of the URL that worked.
+- An MCP server (`hotelrate-mcp`) with four tools: `hotel_quote`, `hotel_quote_batch`, `list_platforms`,
+  `health_check`. `.mcp.json` registers it for Claude Code.
+- A demo mode (the default) that returns synthetic prices without a browser.
+- Starting points for later phases: a FastAPI app, an interval worker, a four-table PostgreSQL schema, and
+  `setup` / `doctor` commands.
+
+### 12.2 How it maps to this design
+
+| Design item | Upstream code | Gap to close |
+|---|---|---|
+| Collector interface (section 4) | `collectors/base.py`: `fetch_rates(SearchRequest) -> list[RawRateOffer]` | One stay per call. No candidate list for the user to confirm, no price calendar, no typed errors (a failure is an empty list or a `RuntimeError`). |
+| Hotel matching and confirmation | `services/url_discovery.py` picks a URL by token overlap; `url_mapping_cache.py` remembers it | Nothing confirms the page is the right hotel. Replace automatic choice with the confirm step; `known_urls` already lets a caller pin the URL. |
+| Rate limiter and retries (section 4) | Semaphores (2 in flight per site), 250 ms stagger, one repeat after 1.1 s on an empty result, up to 8 attempts per site | No 3 to 8 second pauses, no 3-retry cap with back-off, no worker-wide pause on a block, no once-per-day ledger. |
+| Data model (section 5) | `sql/schema.sql`, `infra/models.py`: `hotel_master`, `hotel_mapping`, `rate_snapshot`, `crawl_job_log` | No studies, runs, jobs, events, fetch ledger or raw responses. Snapshots are appended but nothing enforces append-only. |
+| Queue and worker (sections 3, 6) | `apps/worker`: in-process scheduler that crawls every mapped hotel for one fixed stay on an interval | No queue, no per-job outcome, no worker location. |
+| Report and Excel (section 7) | None | All of it. |
+| Web app and sign-in (section 3) | `apps/api`: quote and rate-history endpoints | No UI, no authentication. |
+| Health, canary, alerts (section 8) | `hotelrate-mcp doctor`, `health_check` tool | No canary, no alerts, no health page. |
+| MCP access | `apps/mcp` | Not in the original design. Kept as an extra way to ask for a quote. |
+
+### 12.3 Effect on run size
+
+The original plan gets a hotel's whole price calendar (about 300 dates) in one call. The imported collectors price
+one hotel, one site and one stay per page load. For 11 hotels:
+
+| Task | Original plan | Imported collectors |
+|---|---|---|
+| 1-night price calendar, about 300 dates | 11 calls | 3,300 page loads per site |
+| Offers on about 94 sample dates | about 1,030 calls | about 1,030 page loads per site |
+
+So the imported collectors fit the `channel_offers` task and add a direct view of each booking site, which the
+original plan did not have. They cannot replace the price calendar. Proposal: keep the `google-hotels` library
+(section 2) as the calendar source, and use the imported collectors for offers on sample and event dates.
+
+### 12.4 Collection rules
+
+Changed at import, so the defaults match section 4:
+
+- **No masking by default.** Upstream hid the browser's automation flag, rotated fake desktop user agents and sent a
+  fake browser user agent on search requests. This is now behind `STEALTH_MODE`, default `false`. With it off, the
+  browser keeps its real identity and plain HTTP requests send `hotelrate-mcp/<version>`.
+  See `src/hotelrate/core/browser_policy.py`.
+- **Quotes are for the requested dates.** Upstream moved Booking and Agoda stays forward by up to 12 days when the
+  requested date had no price. The default is now 0, so a date with no price is reported as such.
+
+Still open, each needs a decision (section 12.6):
+
+- **Logged-in sessions.** Upstream's `setup` signs in to each site so member-only prices appear. Member prices are not
+  publicly listed rates. Proposal: do not sign in.
+- **Search-engine scraping.** URL discovery scrapes DuckDuckGo, Yahoo and Brave result pages. Proposal: use it only
+  to suggest candidates during study set-up, then crawl only confirmed URLs.
+- **Text-fallback offers.** When structured parsing fails, upstream returns prices found by pattern matching on page
+  text, with no room or rate terms. Proposal: never store these as observations; log them as a parser failure.
+- **Blocking.** With masking off, sites may block more often. No live crawl has been run yet from any location, so
+  the real success rate is unknown until the canary runs.
+
+### 12.5 Revised phase 1
+
+Done:
+
+- Upstream imported unmodified in its own commit, then the rule changes in 12.4 with tests.
+- `.mcp.json` registers the MCP server for Claude Code.
+
+Next, in order:
+
+1. A `RateCollector` adapter over the imported collectors: typed outcomes (`Blocked`, `NotFound`, `ParseError`,
+   `SourceError`), confirmed URLs only, text-fallback offers rejected.
+2. The shared policy from section 4 (pauses, retry cap, block pause, once-per-day ledger, raw capture) wrapped
+   around every collector call.
+3. The section 5 schema as Alembic migrations, replacing `sql/schema.sql`.
+4. The Google Hotels price calendar through the `google-hotels` library.
+5. Recorded-response fixtures and a first live canary from an office machine.
+
+Phases 2 to 5 keep their goals. `apps/worker` and `apps/api` are the starting points for phases 2 and 4.
+
+Layout: the package stays at `src/hotelrate/` instead of `backend/rateshopper/` (section 9), so upstream fixes can
+still be merged. This can be renamed later if tracking upstream stops mattering.
+
+### 12.6 Further decisions needed
+
+11. **Masking:** keep `STEALTH_MODE` off? Turning it on is a legal and terms-of-use question, not a technical one.
+12. **Sign-in:** confirm anonymous sessions only, no member prices.
+13. **Sites:** which of Booking.com, Agoda, Trip.com and Google Hotels are in scope? I recommend Google Hotels and
+    Booking.com first. Trip.com is the least relevant to a UK compset and upstream reports it often returns nothing
+    without a signed-in session.
+14. **Calendar source:** keep the `google-hotels` library for the price calendar (12.3)?
+15. **Currency default:** the imported code defaults to USD and `en-US`; section 11 item 8 proposes GBP and UK
+    English. I will change the defaults once item 8 is confirmed.

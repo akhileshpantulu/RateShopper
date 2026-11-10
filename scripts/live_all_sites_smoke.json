@@ -1,0 +1,70 @@
+{
+  "concurrency": 2,
+  "hotels": [
+    {
+      "hotel_name": "Atour Hotel Shanghai HuangPu Xintiandi Metro Station",
+      "city": "Shanghai",
+      "checkin": "2026-04-10",
+      "checkout": "2026-04-11",
+      "adults": 2,
+      "children": 0,
+      "currency": "USD",
+      "locale": "en-US",
+      "platforms": ["trip"],
+      "known_urls": {
+        "trip": "https://www.trip.com/hotels/detail/?hotelId=114516981"
+      },
+      "probe_days_ahead": 12,
+      "probe_step_days": 3
+    },
+    {
+      "hotel_name": "Atour Hotel Shanghai HuangPu Xintiandi Metro Station",
+      "city": "Shanghai",
+      "checkin": "2026-05-20",
+      "checkout": "2026-05-21",
+      "adults": 2,
+      "children": 0,
+      "currency": "USD",
+      "locale": "en-US",
+      "platforms": ["booking"],
+      "known_urls": {
+        "booking": "https://www.booking.com/hotel/cn/atour-shanghai-xintiandi-metro-station.html"
+      },
+      "probe_days_ahead": 18,
+      "probe_step_days": 6
+    },
+    {
+      "hotel_name": "Tru by Hilton Las Vegas Airport",
+      "city": "Las Vegas",
+      "checkin": "2026-06-17",
+      "checkout": "2026-06-18",
+      "adults": 2,
+      "children": 0,
+      "currency": "USD",
+      "locale": "en-US",
+      "platforms": ["agoda"],
+      "known_urls": {
+        "agoda": "https://www.agoda.com/zh-hk/tru-by-hilton-las-vegas-airport/hotel/las-vegas-nv-us.html"
+      },
+      "probe_days_ahead": 21,
+      "probe_step_days": 7
+    },
+    {
+      "hotel_name": "Atour Hotel Shanghai HuangPu Xintiandi Metro Station",
+      "city": "Shanghai",
+      "checkin": "2026-04-10",
+      "checkout": "2026-04-11",
+      "adults": 2,
+      "children": 0,
+      "currency": "USD",
+      "locale": "en-US",
+      "market": "US",
+      "platforms": ["google_hotels"],
+      "known_urls": {
+        "google_hotels": "https://www.google.com/travel/search?q=Atour+Hotel+Shanghai+HuangPu+Xintiandi+Metro+Station"
+      },
+      "probe_days_ahead": 0,
+      "probe_step_days": 3
+    }
+  ]
+}

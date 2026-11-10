@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hotelrate-mcp"
+version = "0.3.0"
+description = "MCP Server & CLI for real-time multi-platform hotel price comparison (Trip.com, Booking.com, Agoda, Google Hotels)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+keywords = ["mcp", "hotel", "price-comparison", "travel", "ota", "crawl", "booking", "trip", "agoda"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+]
+authors = [
+  {name = "Sean", email = "shantianfenghk@gmail.com"},
+]
+dependencies = [
+  "mcp[cli]>=1.20.0",
+  "pydantic>=2.11.0",
+  "pydantic-settings>=2.9.0",
+  "httpx>=0.28.0",
+  "playwright>=1.52.0",
+  "python-dateutil>=2.9.0",
+  "rich>=13.9.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/seanbabalala/hotelrate-crawl"
+Repository = "https://github.com/seanbabalala/hotelrate-crawl"
+Issues = "https://github.com/seanbabalala/hotelrate-crawl/issues"
+
+[project.optional-dependencies]
+api = [
+  "fastapi>=0.116.0",
+  "uvicorn[standard]>=0.35.0",
+]
+worker = [
+  "sqlalchemy[asyncio]>=2.0.40",
+  "asyncpg>=0.30.0",
+  "apscheduler>=3.11.0",
+]
+all = [
+  "hotelrate-mcp[api,worker]",
+]
+dev = [
+  "ruff>=0.11.0",
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.26.0",
+]
+
+[project.scripts]
+hotelrate-mcp = "hotelrate.apps.mcp.server:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
