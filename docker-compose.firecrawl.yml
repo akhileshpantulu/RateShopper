@@ -1,0 +1,88 @@
+# Firecrawl 本地服务（用于 URL 发现 / map / crawl）
+# 与主 compose 一起启动: docker compose -f docker-compose.yml -f docker-compose.firecrawl.yml up -d
+# 仅启动 Firecrawl: docker compose -f docker-compose.firecrawl.yml up -d
+#
+# 本项目的 config 默认连接 http://localhost:3002（FIRECRAWL_BASE_URL）
+
+services:
+  redis:
+    image: redis:alpine
+    container_name: hotelrate-firecrawl-redis
+    command: redis-server --bind 0.0.0.0
+    networks:
+      - firecrawl
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: hotelrate-firecrawl-rabbitmq
+    networks:
+      - firecrawl
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  nuq-postgres:
+    image: ghcr.io/firecrawl/nuq-postgres:latest
+    container_name: hotelrate-firecrawl-nuq-postgres
+    environment:
+      POSTGRES_USER: ${FIRECRAWL_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${FIRECRAWL_POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${FIRECRAWL_POSTGRES_DB:-postgres}
+    ports:
+      - "5433:5432"
+    volumes:
+      - firecrawl_nuq_data:/var/lib/postgresql/data
+    networks:
+      - firecrawl
+
+  playwright-service:
+    image: ghcr.io/firecrawl/playwright-service:latest
+    container_name: hotelrate-firecrawl-playwright
+    environment:
+      PORT: "3000"
+      MAX_CONCURRENT_PAGES: ${FIRECRAWL_CRAWL_CONCURRENT_REQUESTS:-10}
+    networks:
+      - firecrawl
+
+  api:
+    image: ghcr.io/firecrawl/firecrawl:latest
+    container_name: hotelrate-firecrawl-api
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "3002"
+      INTERNAL_PORT: "3002"
+      REDIS_URL: redis://redis:6379
+      REDIS_RATE_LIMIT_URL: redis://redis:6379
+      PLAYWRIGHT_MICROSERVICE_URL: http://playwright-service:3000/scrape
+      POSTGRES_USER: ${FIRECRAWL_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${FIRECRAWL_POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${FIRECRAWL_POSTGRES_DB:-postgres}
+      POSTGRES_HOST: nuq-postgres
+      POSTGRES_PORT: "5432"
+      USE_DB_AUTHENTICATION: "false"
+      NUQ_RABBITMQ_URL: amqp://rabbitmq:5672
+      BULL_AUTH_KEY: ${FIRECRAWL_BULL_AUTH_KEY:-CHANGEME}
+    ports:
+      - "3002:3002"
+    depends_on:
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      nuq-postgres:
+        condition: service_started
+      playwright-service:
+        condition: service_started
+    networks:
+      - firecrawl
+    command: node dist/src/harness.js --start-docker
+
+networks:
+  firecrawl:
+    driver: bridge
+
+volumes:
+  firecrawl_nuq_data:

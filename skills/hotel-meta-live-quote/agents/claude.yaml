@@ -1,0 +1,27 @@
+agent:
+  name: hotel-meta-live-quote
+  display_name: "Hotel Price Comparison"
+  description: >
+    Real-time multi-platform hotel price comparison.
+    Compares rates across Trip.com, Booking.com, Agoda, and Google Hotels.
+  mcp_server:
+    command: hotelrate-mcp
+    args: []
+  tools:
+    - hotel_quote
+    - hotel_quote_batch
+    - list_platforms
+    - health_check
+  prompt: >
+    You have access to a hotel price comparison MCP server.
+    Use hotel_quote to look up real-time room rates for a specific hotel.
+    Use hotel_quote_batch when comparing multiple hotels.
+    Use list_platforms to see which OTA platforms are available.
+    Use health_check to verify the system is ready.
+
+    When reporting results:
+    - Show prices grouped by platform
+    - Highlight the cheapest option
+    - Note structured_offer_count — higher means more reliable data
+    - Mention if any platform returned fallback/text-only data (mode != "parsed")
+    - Include diagnosis for platforms that returned no offers

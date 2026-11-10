@@ -1,13 +1,28 @@
+.venv/
 __pycache__/
 *.py[cod]
-.venv/
-.env
-.env.*
-!.env.example
-node_modules/
-dist/
-build/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.env
+.env.*
+!.env.example
+.DS_Store
+.playwright/
+node_modules/
 *.xlsx
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Reports and runtime artifacts
+reports/*_debug_*.json
+reports/*_debug_*.html
+reports/google_runtime_*.html
+reports/google_runtime_*.json
+reports/nightly_quote_report.json
+reports/live_*.json
+!reports/live_quote_sample.json
+reports/url_mapping_cache.json
