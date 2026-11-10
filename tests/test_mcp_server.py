@@ -55,7 +55,16 @@ async def test_server_lists_all_four_tools():
     async with create_connected_server_and_client_session(mcp) as client:
         result = await client.list_tools()
         tool_names = sorted(t.name for t in result.tools)
-        assert tool_names == ["health_check", "hotel_quote", "hotel_quote_batch", "list_platforms"]
+        assert tool_names == [
+            "google_find_hotel",
+            "google_hotel_offers",
+            "google_price_calendar",
+            "google_rate_shop",
+            "health_check",
+            "hotel_quote",
+            "hotel_quote_batch",
+            "list_platforms",
+        ]
 
 
 # ---------------------------------------------------------------------------

@@ -26,6 +26,8 @@ dependencies = [
   "pydantic>=2.11.0",
   "pydantic-settings>=2.9.0",
   "httpx>=0.28.0",
+  # Exact pin: the rate-shop collector uses its internal modules (tests/test_google_hotels_contract.py).
+  "google-hotels==0.1.0",
   "playwright>=1.52.0",
   "python-dateutil>=2.9.0",
   "rich>=13.9.0",

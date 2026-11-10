@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -63,6 +63,24 @@ class Settings(BaseSettings):
     booking_debug_save_json: bool = False
     agoda_debug_save_json: bool = False
     trip_debug_save_json: bool = False
+
+    # Google Hotels rate shop (direct calls, no browser): see src/hotelrate/rateshop/.
+    google_hotels_language: str = Field(default="en", min_length=2, max_length=8)
+    google_hotels_country: str = Field(default="us", min_length=2, max_length=2)
+    default_currency: str = Field(default="USD", min_length=3, max_length=3)
+    # Request policy, docs/DESIGN.md section 4. There is deliberately no proxy setting.
+    rateshop_max_in_flight: int = Field(default=2, ge=1, le=5)
+    rateshop_pause_min_seconds: float = Field(default=3.0, ge=0, le=60)
+    rateshop_pause_max_seconds: float = Field(default=8.0, ge=0, le=120)
+    rateshop_max_retries: int = Field(default=3, ge=0, le=3)
+    rateshop_retry_base_seconds: float = Field(default=30.0, ge=0, le=600)
+    rateshop_block_pause_seconds: float = Field(default=300.0, ge=0, le=3600)
+
+    @model_validator(mode="after")
+    def _check_pause_range(self) -> "Settings":
+        if self.rateshop_pause_max_seconds < self.rateshop_pause_min_seconds:
+            raise ValueError("RATESHOP_PAUSE_MAX_SECONDS must be at least RATESHOP_PAUSE_MIN_SECONDS")
+        return self
 
 
 @lru_cache
