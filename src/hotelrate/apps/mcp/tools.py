@@ -19,6 +19,7 @@ from hotelrate.schemas import (
     LiveQuoteRequest,
     Platform,
 )
+from hotelrate.rateshop import CollectorError, GoogleHotelsCollector, rate_shop, sample_dates
 from hotelrate.services import LiveQuoteService
 
 logger = logging.getLogger(__name__)
@@ -383,3 +384,145 @@ def register_tools(mcp: FastMCP) -> None:
             "issues": preflight_issues,
             "setup_commands": setup_commands,
         }
+
+    # -- Google Hotels rate shop: direct calls, no browser, always live (DEMO_MODE does not apply) --------------
+
+    def _google(ctx: Context) -> GoogleHotelsCollector:
+        return ctx.request_context.lifespan_context["google"]
+
+    @mcp.tool()
+    async def google_find_hotel(
+        ctx: Context, name: str, city: str = "", max_candidates: int = 5
+    ) -> dict[str, Any]:
+        """Find a hotel on Google Hotels and list candidates to confirm.
+
+        Returns up to max_candidates hotels with their source_id (Google property token), star class, rating and
+        review count. Show them to the user to confirm the right property, then pass its source_id as `hotel` to
+        the other google_* tools. Live call, about 1-2 seconds.
+        """
+        try:
+            found = await _google(ctx).resolve_hotel(name, city, max_candidates=max_candidates)
+        except CollectorError as error:
+            raise ValueError(f"{type(error).__name__}: {error}") from error
+        return {"candidates": [candidate.model_dump(mode="json") for candidate in found]}
+
+    @mcp.tool()
+    async def google_price_calendar(
+        ctx: Context,
+        hotel: str,
+        start: str | None = None,
+        days: int = 365,
+        nights: int = 1,
+        adults: int = 2,
+        currency: str | None = None,
+        include_days: bool = True,
+    ) -> dict[str, Any]:
+        """Price of the same stay for every check-in date, about 300 days ahead, in one live call.
+
+        Args:
+            hotel: source_id from google_find_hotel (preferred), a Google Hotels link, or "name, city". A name is
+                   refused unless Google's first result matches it.
+            start: first check-in date YYYY-MM-DD (default today)
+            days: check-in dates to cover, 1-400 (default 365)
+            nights: length of stay priced for each date (default 1)
+            currency: ISO 4217 code (default DEFAULT_CURRENCY)
+            include_days: false returns only the summary (horizon, counts, lowest/median/highest total)
+
+        Each day has status priced, no_price (inside Google's horizon but no price shown: a possible sell-out) or
+        not_offered (beyond the last date Google prices).
+        """
+        try:
+            result = await _google(ctx).price_calendar(
+                hotel,
+                start=date.fromisoformat(start) if start else None,
+                days=days,
+                nights=nights,
+                adults=adults,
+                currency=currency,
+            )
+        except CollectorError as error:
+            raise ValueError(f"{type(error).__name__}: {error}") from error
+        data = result.model_dump(mode="json")
+        if not include_days:
+            data.pop("days")
+        return data
+
+    @mcp.tool()
+    async def google_hotel_offers(
+        ctx: Context,
+        hotel: str,
+        checkin: str,
+        nights: int = 1,
+        adults: int = 2,
+        currency: str | None = None,
+    ) -> dict[str, Any]:
+        """Every booking channel's live price for one stay: Booking.com, Expedia, Agoda, the hotel's own site...
+
+        Args:
+            hotel: source_id from google_find_hotel (preferred), a Google Hotels link, or "name, city"
+            checkin: check-in date YYYY-MM-DD
+            nights: nights (default 1)
+            currency: ISO 4217 code (default DEFAULT_CURRENCY)
+
+        One row per channel, or per room rate when Google lists rooms, with official-site and sponsored flags.
+        """
+        try:
+            result = await _google(ctx).channel_offers(
+                hotel, check_in=date.fromisoformat(checkin), nights=nights, adults=adults, currency=currency
+            )
+        except CollectorError as error:
+            raise ValueError(f"{type(error).__name__}: {error}") from error
+        return result.model_dump(mode="json")
+
+    @mcp.tool()
+    async def google_rate_shop(
+        ctx: Context,
+        hotel: str,
+        start: str | None = None,
+        days: int = 365,
+        nights: int = 1,
+        adults: int = 2,
+        currency: str | None = None,
+        offer_dates: list[str] | None = None,
+        sample_weeks: bool = False,
+        include_days: bool = False,
+    ) -> dict[str, Any]:
+        """Full rate shop for one hotel: the price calendar plus every channel's offers on chosen dates.
+
+        Args:
+            hotel: source_id from google_find_hotel (preferred), a Google Hotels link, or "name, city"
+            start, days, nights, adults, currency: as for google_price_calendar
+            offer_dates: check-in dates (YYYY-MM-DD) to fetch every channel's offers for
+            sample_weeks: also fetch offers for one full week a month (Monday-Sunday from the second Monday)
+            include_days: include every calendar day (default false: calendar summary only)
+
+        Calls follow the request policy (2 in flight, 3-8 s apart by default), so each offers date adds about
+        5 seconds; sample_weeks over a year is about 84 dates, roughly 7 minutes.
+        """
+        first = date.fromisoformat(start) if start else None
+        dates = [date.fromisoformat(item) for item in offer_dates or []]
+        if sample_weeks:
+            dates += sample_dates(first or date.today(), months=max(1, days // 30))
+
+        async def progress(done: int, total: int, message: str) -> None:
+            await ctx.report_progress(done, total)
+            await ctx.info(message)
+
+        try:
+            result = await rate_shop(
+                _google(ctx),
+                hotel,
+                start=first,
+                days=days,
+                nights=nights,
+                adults=adults,
+                currency=currency,
+                offer_dates=dates,
+                on_progress=progress,
+            )
+        except CollectorError as error:
+            raise ValueError(f"{type(error).__name__}: {error}") from error
+        data = result.model_dump(mode="json")
+        if not include_days:
+            data["calendar"].pop("days")
+        return data

@@ -9,12 +9,33 @@ imported under its MIT license (see [UPSTREAM.md](UPSTREAM.md)). The design, the
 
 ## What works today
 
-- `hotelrate-mcp`: an MCP server that quotes one hotel and one stay across Booking.com, Agoda, Trip.com and Google
-  Hotels. Tools: `hotel_quote`, `hotel_quote_batch`, `list_platforms`, `health_check`.
-- Demo mode (the default) returns synthetic prices with no browser, so the whole path can be tried offline.
-- Live mode drives Chromium through Playwright. It has not yet been run from this project.
+**Google Hotels rate shop (no browser, live data).** Calls the same data endpoints Google Hotels' own page uses,
+through the `google-hotels` library, under this project's request policy (2 requests in flight, 3 to 8 seconds
+apart, at most 3 retries, a pause on any block, honest user agent, no proxies).
 
-Not built yet: studies, the price calendar, scheduled runs, the report and Excel export, the web app.
+- Price calendar: the price of the same stay for every check-in date, about 300 days ahead, in one call
+  (0.3 seconds when tested). Dates inside Google's horizon with no price are marked `no_price`; dates beyond it
+  `not_offered`.
+- Channel offers: every booking channel's price for one stay (Booking.com, Expedia, Agoda, Trip.com, the hotel's own
+  site...), with room-level rates, free cancellation and breakfast when Google lists them.
+- A full shop of one hotel (365-day calendar plus offers on 3 dates) took 4 requests and 20 seconds live.
+
+```bash
+hotelrate-mcp find "The Savoy" --city London
+```
+
+```bash
+hotelrate-mcp shop <source_id> --days 365 --offers sample --csv-dir out/
+```
+
+MCP tools: `google_find_hotel`, `google_price_calendar`, `google_hotel_offers`, `google_rate_shop`. These always
+call Google live; `DEMO_MODE` does not apply to them.
+
+**Imported multi-site crawler.** `hotel_quote`, `hotel_quote_batch`, `list_platforms` and `health_check` quote one
+hotel and one stay on Booking.com, Agoda, Trip.com and Google Hotels by driving Chromium through Playwright. Demo mode
+(the default) returns synthetic prices. Live mode has not yet been run from this project.
+
+Not built yet: studies, the database schema, scheduled runs, the report and Excel export, the web app.
 
 ## Set up
 

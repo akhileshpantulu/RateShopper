@@ -21,10 +21,13 @@ authors = [
   {name = "Sean", email = "shantianfenghk@gmail.com"},
 ]
 dependencies = [
-  "mcp[cli]>=1.20.0",
+  # The server uses the v1 FastMCP API; mcp 2.x renamed it and changed other APIs.
+  "mcp[cli]>=1.20.0,<2",
   "pydantic>=2.11.0",
   "pydantic-settings>=2.9.0",
   "httpx>=0.28.0",
+  # Exact pin: the rate-shop collector uses its internal modules (tests/test_google_hotels_contract.py).
+  "google-hotels==0.1.0",
   "playwright>=1.52.0",
   "python-dateutil>=2.9.0",
   "rich>=13.9.0",
@@ -66,6 +69,12 @@ where = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint]
+# The rule set the imported code was written against (ruff's defaults up to 0.11).
+# Newer ruff releases enable many more rules by default, which fail on that code.
+# Stating the set here keeps lint results the same whichever ruff version runs.
+select = ["E4", "E7", "E9", "F"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -315,7 +315,7 @@ Changed at import, so the defaults match section 4:
 - **Quotes are for the requested dates.** Upstream moved Booking and Agoda stays forward by up to 12 days when the
   requested date had no price. The default is now 0, so a date with no price is reported as such.
 
-Still open, each needs a decision (section 12.6):
+Still open, each needs a decision (section 12.7):
 
 - **Logged-in sessions.** Upstream's `setup` signs in to each site so member-only prices appear. Member prices are not
   publicly listed rates. Proposal: do not sign in.
@@ -340,7 +340,7 @@ Next, in order:
 2. The shared policy from section 4 (pauses, retry cap, block pause, once-per-day ledger, raw capture) wrapped
    around every collector call.
 3. The section 5 schema as Alembic migrations, replacing `sql/schema.sql`.
-4. The Google Hotels price calendar through the `google-hotels` library.
+4. ~~The Google Hotels price calendar through the `google-hotels` library.~~ Done, with channel offers (12.6).
 5. Recorded-response fixtures and a first live canary from an office machine.
 
 Phases 2 to 5 keep their goals. `apps/worker` and `apps/api` are the starting points for phases 2 and 4.
@@ -348,7 +348,37 @@ Phases 2 to 5 keep their goals. `apps/worker` and `apps/api` are the starting po
 Layout: the package stays at `src/hotelrate/` instead of `backend/rateshopper/` (section 9), so upstream fixes can
 still be merged. This can be renamed later if tracking upstream stops mattering.
 
-### 12.6 Further decisions needed
+### 12.6 Google Hotels collector (built 2026-11-10)
+
+`src/hotelrate/rateshop/` implements `resolve_hotel`, `price_calendar` and `channel_offers` from section 4 on
+`google-hotels==0.1.0`, with the library's transport replaced (finding F2) so every call goes through
+`RequestPolicy`, our retry cap and block pause. Library failures map to `Blocked`, `NotFound`, `ParseError` (with
+the raw answer) and `SourceError`. No-price dates are filled in (F3) and rate plans derived from the flags (F4).
+`rate_shop()` runs a calendar plus offers dates, one outcome per date. Tests replay real answers recorded in
+`tests/fixtures/google_hotels/`; `tests/test_google_hotels_contract.py` pins the library internals used.
+
+Live results from this cloud session, honest `hotelrate-mcp` user agent, `gl=gb`, GBP:
+
+| Call | Result |
+|---|---|
+| Search "The Savoy London" | 1.3 s; correct hotel first |
+| 365-day calendar, The Savoy | 0.3 s; 300 to 315 priced days, horizon 2027-10-14, about 10 no-price days inside it |
+| Offers, Strand Palace | 1.0 s; 21 channels incl. Booking.com, Agoda, Trip.com, Hotels.com; no room-level rates |
+| Offers, The Savoy, 3 dates | 1 channel on one date; on another the official site with room-level SAVER and FLEX rates |
+| Full shop, The Savoy: calendar plus 3 offers dates | 4 requests, 19.7 s with the default pauses |
+
+Open points from these runs:
+
+- **Coverage varies by hotel and date.** Room names, cancellation and breakfast come back only for some channels.
+  With the honest user agent the search answer was smaller than with a browser user agent, so Google may send
+  less to non-browser clients; this was not compared further.
+- **Run size.** For 11 hotels, calendars are 11 calls (about a minute with pauses) and offers on 94 sample dates are
+  about 1,030 calls (about 1.5 hours at the default pauses). Lower pauses shorten this; the daily canary should
+  show whether that holds before they are lowered.
+- **Cloud IP.** These calls succeeded from a cloud data-centre IP. The office worker (section 3) is still the
+  expected main collector.
+
+### 12.7 Further decisions needed
 
 11. **Masking:** keep `STEALTH_MODE` off? Turning it on is a legal and terms-of-use question, not a technical one.
 12. **Sign-in:** confirm anonymous sessions only, no member prices.

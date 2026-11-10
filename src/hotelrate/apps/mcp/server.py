@@ -14,6 +14,7 @@ from mcp.server.fastmcp import FastMCP
 
 from hotelrate.apps.mcp.preflight import check_environment
 from hotelrate.config import get_settings
+from hotelrate.rateshop import GoogleHotelsCollector
 from hotelrate.services import LiveQuoteService
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,11 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict]:
             )
 
     service = LiveQuoteService(settings)
-    yield {"service": service, "settings": settings, "preflight_issues": issues}
+    google = GoogleHotelsCollector(settings)
+    try:
+        yield {"service": service, "settings": settings, "preflight_issues": issues, "google": google}
+    finally:
+        await google.aclose()
 
 
 mcp = FastMCP(
@@ -44,7 +49,10 @@ mcp = FastMCP(
         "Real-time multi-platform hotel price comparison. "
         "Query hotel rates across Trip.com, Booking.com, Agoda, and Google Hotels. "
         "Use hotel_quote for single-hotel lookups, hotel_quote_batch for bulk queries, "
-        "list_platforms to see supported OTAs, and health_check to verify the system."
+        "list_platforms to see supported OTAs, and health_check to verify the system. "
+        "For fast rate shopping without a browser, use the google_* tools: google_find_hotel to pick the hotel, "
+        "google_price_calendar for a year of prices in one call, google_hotel_offers for every booking "
+        "channel on one date, and google_rate_shop for both."
     ),
     lifespan=_lifespan,
 )
@@ -121,6 +129,14 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Output machine-readable JSON to stdout",
     )
 
+    # ── find / shop (Google Hotels rate shop) ──────────────────────────
+    from hotelrate.apps.mcp.cli.rateshop import add_find_arguments, add_shop_arguments
+
+    find = sub.add_parser("find", help="List Google Hotels candidates for a hotel name")
+    add_find_arguments(find)
+    shop = sub.add_parser("shop", help="Google Hotels price calendar and channel offers for one hotel")
+    add_shop_arguments(shop)
+
     # ── Top-level flags for backward compat ────────────────────────────
     # ``hotelrate-mcp --transport sse`` still works (command = None → serve)
     _add_serve_args(parser)
@@ -136,6 +152,14 @@ def main(argv: list[str] | None = None) -> None:
         from hotelrate.apps.mcp.cli import run_setup
 
         run_setup(args)
+    elif args.command == "find":
+        from hotelrate.apps.mcp.cli.rateshop import run_find
+
+        run_find(args)
+    elif args.command == "shop":
+        from hotelrate.apps.mcp.cli.rateshop import run_shop
+
+        run_shop(args)
     elif args.command == "doctor":
         from hotelrate.apps.mcp.cli import run_doctor
 
