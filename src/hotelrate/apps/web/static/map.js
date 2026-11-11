@@ -12,16 +12,63 @@
   };
   const RINGS_KM = [0.5, 1, 2];
   const LABEL_MAX = 24;
-  const BASES = { muted: "Muted streets", detailed: "Detailed streets", none: "No basemap" };
+  const VECTOR_BASES = { dark: "Dark", darkplain: "Dark, no labels", light: "Light", none: "No basemap" };
+  const RASTER_BASES = { muted: "Muted streets", detailed: "Detailed streets", none: "No basemap" };
   const OVERLAYS = { labels: "Hotel labels", candidates: "Candidates", rings: "Distance rings" };
   const PREFS_KEY = "rateshop.map.layers";
 
-  function loadPrefs() {
+  function loadPrefs(bases, fallback) {
     try {
       const stored = JSON.parse(localStorage.getItem(PREFS_KEY) || "null");
-      if (stored && BASES[stored.base] && Array.isArray(stored.hidden)) return stored;
+      if (stored && bases[stored.base] && Array.isArray(stored.hidden)) return stored;
+      if (stored && Array.isArray(stored.hidden)) return { base: fallback, hidden: stored.hidden };
     } catch (_) { /* storage unavailable: use defaults */ }
-    return { base: "muted", hidden: [] };
+    return { base: fallback, hidden: [] };
+  }
+
+  function webglAvailable() {
+    try {
+      const canvas = document.createElement("canvas");
+      return Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl"));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  const styleCache = new Map();
+  /** A map style, optionally without its text labels; fetched once per URL. */
+  function loadStyle(url, withoutLabels) {
+    if (!styleCache.has(url)) styleCache.set(url, fetch(url).then((r) => {
+      if (!r.ok) throw new Error(`map style ${r.status}`);
+      return r.json();
+    }));
+    return styleCache.get(url).then((style) => (withoutLabels
+      ? { ...style, layers: style.layers.filter((layer) => layer.type !== "symbol") } : style));
+  }
+
+  /** A basemap layer drawn by MapLibre from a vector style, created the first time it is shown. */
+  function vectorBase(url, withoutLabels, attribution, onError) {
+    const holder = L.layerGroup();
+    let gl = null;
+    holder.on("add", () => {
+      if (gl) { holder.addLayer(gl); return; }
+      loadStyle(url, withoutLabels).then((style) => {
+        gl = L.maplibreGL({ style, attribution, interactive: false });
+        if (holder._map) holder.addLayer(gl);
+      }).catch(onError);
+    });
+    return holder;
+  }
+
+  function notice(map, text) {
+    const control = L.control({ position: "bottomleft" });
+    control.onAdd = () => {
+      const box = document.createElement("div");
+      box.className = "map-notice";
+      box.textContent = text;
+      return box;
+    };
+    control.addTo(map);
   }
 
   function savePrefs(prefs) {
@@ -44,23 +91,46 @@
     map.attributionControl.setPrefix("Leaflet");
     map.setView([30, 0], 2);
 
-    const tileOptions = { attribution: config.map_tile_attribution, maxZoom: 19 };
-    const dark = config.map_tile_dark_filter;
-    const bases = {
-      muted: L.tileLayer(config.map_tile_url, { ...tileOptions, className: dark ? "tiles-muted" : "tiles-muted-plain" }),
-      detailed: L.tileLayer(config.map_tile_url, { ...tileOptions, className: dark ? "tiles-detailed" : "" }),
-      none: L.layerGroup(),
-    };
+    let bases;
+    let BASES;
+    let fallback;
+    if (config.map_tile_url) {
+      // A raster tile server was configured: muted and detailed versions of it.
+      const tileOptions = { attribution: config.map_tile_attribution, maxZoom: 19 };
+      const dark = config.map_tile_dark_filter;
+      bases = {
+        muted: L.tileLayer(config.map_tile_url, { ...tileOptions, className: dark ? "tiles-muted" : "tiles-muted-plain" }),
+        detailed: L.tileLayer(config.map_tile_url, { ...tileOptions, className: dark ? "tiles-detailed" : "" }),
+        none: L.layerGroup(),
+      };
+      BASES = RASTER_BASES;
+      fallback = "muted";
+    } else if (webglAvailable() && L.maplibreGL) {
+      const failed = (error) => notice(map, `Basemap unavailable (${error.message}); hotels are still plotted.`);
+      bases = {
+        dark: vectorBase(config.map_style_url, false, config.map_attribution, failed),
+        darkplain: vectorBase(config.map_style_url, true, config.map_attribution, failed),
+        light: vectorBase(config.map_style_url_light, false, config.map_attribution, failed),
+        none: L.layerGroup(),
+      };
+      BASES = VECTOR_BASES;
+      fallback = "dark";
+    } else {
+      bases = { none: L.layerGroup() };
+      BASES = { none: "No basemap" };
+      fallback = "none";
+      notice(map, "This browser cannot draw the basemap (WebGL is off); hotels are still plotted.");
+    }
     const hotels = L.layerGroup().addTo(map);
     const overlays = { labels: L.layerGroup(), candidates: L.layerGroup(), rings: L.layerGroup() };
 
-    const prefs = loadPrefs();
+    const prefs = loadPrefs(bases, fallback);
     bases[prefs.base].addTo(map);
     Object.entries(overlays).forEach(([key, layer]) => { if (!prefs.hidden.includes(key)) layer.addTo(map); });
     const named = (source, names) => Object.fromEntries(Object.entries(source).map(([key, layer]) => [names[key], layer]));
     L.control.layers(named(bases, BASES), named(overlays, OVERLAYS), { position: "topright", collapsed: true }).addTo(map);
     const keyOf = (layer, source) => Object.keys(source).find((key) => source[key] === layer);
-    map.on("baselayerchange", (e) => { prefs.base = keyOf(e.layer, bases) || "muted"; savePrefs(prefs); });
+    map.on("baselayerchange", (e) => { prefs.base = keyOf(e.layer, bases) || fallback; savePrefs(prefs); });
     map.on("overlayadd overlayremove", (e) => {
       const key = keyOf(e.layer, overlays);
       if (!key) return;

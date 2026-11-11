@@ -176,6 +176,10 @@ table.data .actions > * + * { margin-left: 6px; }
 .leaflet-tooltip.map-label::before { display: none; }
 .leaflet-tooltip.ring-label { background: transparent; border: none; box-shadow: none; color: var(--dim);
                               font-family: var(--mono); font-size: 9.5px; padding: 0; }
+.map-notice { background: rgba(11, 15, 18, 0.85); color: var(--muted); border: 1px solid var(--line-strong);
+              font-family: var(--mono); font-size: 10.5px; padding: 3px 6px; max-width: 320px; }
+/* MapLibre basemaps sit under the markers and do not take pointer events. */
+.leaflet-gl-layer { pointer-events: none; }
 /* Layer switcher */
 .leaflet-control-layers { background: var(--panel-2); color: var(--text); border: 1px solid var(--line-strong) !important;
                           border-radius: 0; box-shadow: none !important; font-family: var(--mono); font-size: 11px; }

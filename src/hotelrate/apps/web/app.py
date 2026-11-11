@@ -174,6 +174,9 @@ def create_app(
             "forward_windows": list(FORWARD_WINDOWS),
             "seconds_per_request": round((settings.rateshop_pause_min_seconds + settings.rateshop_pause_max_seconds) / 2
                                          + 1, 1),
+            "map_style_url": settings.map_style_url,
+            "map_style_url_light": settings.map_style_url_light,
+            "map_attribution": settings.map_attribution,
             "map_tile_url": settings.map_tile_url,
             "map_tile_attribution": settings.map_tile_attribution,
             "map_tile_dark_filter": settings.map_tile_dark_filter,

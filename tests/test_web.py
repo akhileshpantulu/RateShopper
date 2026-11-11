@@ -164,9 +164,12 @@ def test_status_and_map_config(client: TestClient) -> None:
     status = client.get("/api/status").json()
     assert status["active_runs"] == [] and status["max_in_flight"] == 2
     config = client.get("/api/config").json()
-    assert "{z}" in config["map_tile_url"] and "OpenStreetMap" in config["map_tile_attribution"]
-    assert config["map_tile_dark_filter"] is True
-    for asset in ("/static/map.js", "/static/vendor/leaflet/leaflet.js", "/static/vendor/leaflet/leaflet.css"):
+    assert config["map_style_url"].startswith("https://tiles.openfreemap.org/styles/")
+    assert "OpenStreetMap" in config["map_attribution"] and "OpenFreeMap" in config["map_attribution"]
+    # OpenStreetMap's own tile servers refuse this kind of app, so no raster server is configured by default.
+    assert config["map_tile_url"] == ""
+    for asset in ("/static/map.js", "/static/vendor/leaflet/leaflet.js", "/static/vendor/leaflet/leaflet.css",
+                  "/static/vendor/maplibre/maplibre-gl.js", "/static/vendor/maplibre-leaflet/leaflet-maplibre-gl.js"):
         assert client.get(asset).status_code == 200
 
 

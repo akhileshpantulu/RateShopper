@@ -84,12 +84,20 @@ class Settings(BaseSettings):
     # Raw Google answers kept in raw_responses: none, failures (parser and source failures) or all.
     store_raw_responses: str = Field(default="failures", pattern="^(none|failures|all)$")
 
-    # Map tiles for the web app's map view; the browser loads them directly from this server. The default is the
-    # OpenStreetMap standard layer: no key, fine for light use with attribution (operations.osmfoundation.org/policies/
-    # tiles). For heavier use point this at a commercial or self-hosted tile server.
-    map_tile_url: str = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    # Map basemap. Default: OpenStreetMap data served as vector tiles by OpenFreeMap (free, no key, commercial use
+    # allowed, openfreemap.org), drawn in the browser with MapLibre. The browser loads them directly from that server.
+    map_style_url: str = "https://tiles.openfreemap.org/styles/dark"
+    map_style_url_light: str = "https://tiles.openfreemap.org/styles/positron"
+    map_attribution: str = (
+        '<a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> '
+        '<a href="https://www.openmaptiles.org/" target="_blank">&copy; OpenMapTiles</a> '
+        'Data from <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+    )
+    # Optional raster tile server ({z}/{x}/{y} URL) used instead of the vector styles, e.g. a commercial or
+    # self-hosted one. OpenStreetMap's own tile servers block apps like this one, so they are not the default.
+    map_tile_url: str = ""
     map_tile_attribution: str = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    # Darken light tiles in the browser so they match the console; set false for tiles that are already dark.
+    # Darken light raster tiles in the browser so they match the console; set false for tiles that are already dark.
     map_tile_dark_filter: bool = True
 
     @model_validator(mode="after")

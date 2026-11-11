@@ -436,9 +436,11 @@ search answers carry only a shared viewport box, not per-hotel coordinates (chec
 hotel is placed with one prices call (`GoogleHotelsCollector.locate`) and its coordinates and address are stored on
 the `hotels` row; channel-offers fetches fill them in too. Search results are located one at a time after they are
 listed, and the stored position is reused from then on. Distances are great-circle (haversine). **Sweep nearby**
-runs Google's own "hotels near <target>" search and maps the results as candidates. Tiles default to OpenStreetMap's
-standard layer, darkened with a CSS filter; CARTO's dark basemap was tried first and now returns an "API key
-required" watermark.
+runs Google's own "hotels near <target>" search and maps the results as candidates. The basemap is OpenStreetMap data from
+OpenFreeMap's public vector tiles (dark, and positron for the light option), drawn by MapLibre GL 5.8.0 (BSD-3) through
+the maplibre-gl-leaflet bridge 0.1.3 (ISC), both vendored. Tried and dropped: CARTO's dark basemap (now returns an
+"API key required" watermark) and OpenStreetMap's own raster tiles (returned 403 "Access blocked" when served from a
+Codespaces address, under its tile usage policy). A raster server can still be configured with `MAP_TILE_URL`.
 
 This stands in for the phase 4 React app for one user. It has no sign-in and binds to localhost by default; a
 collection started in the browser runs inside the server process and stops if the server stops (the ledger keeps

@@ -88,13 +88,14 @@ panels, monospace data, and maps.
   comp. Below: the forward rate chart, forward averages, collection with a live progress feed, events, and every
   report table with the Excel download.
 
-The map's layer switcher (top right) picks a muted basemap (default), a detailed one or none, and turns hotel labels,
-candidates and distance rings on or off; the choice is remembered in your browser.
+The map's layer switcher (top right) picks the basemap (Dark, Dark without labels, Light or none) and turns hotel
+labels, candidates and distance rings on or off; the choice is remembered in your browser.
 
 Search results carry no coordinates, so each hotel is located once with one Google call and the position is stored;
-afterwards it shows instantly. The map uses OpenStreetMap's standard tiles, darkened in the browser. They need no key
-and suit light internal use with attribution (OSM tile usage policy); set `MAP_TILE_URL` and `MAP_TILE_ATTRIBUTION` to
-use a commercial or self-hosted tile server instead, and `MAP_TILE_DARK_FILTER=false` if its tiles are already dark.
+afterwards it shows instantly. The basemap is OpenStreetMap data served by [OpenFreeMap](https://openfreemap.org)
+(free, no key, commercial use allowed) and drawn in the browser, which needs WebGL; without it the map shows the
+hotels on a plain background. OpenStreetMap's own tile servers refuse apps like this one. To use another provider, set
+`MAP_STYLE_URL` (a vector style) or `MAP_TILE_URL` (raster tiles) and the matching attribution.
 
 ## Run a rate shop from the command line
 
