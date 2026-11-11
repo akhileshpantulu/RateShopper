@@ -108,6 +108,13 @@ def add_commands(sub: argparse._SubParsersAction) -> None:
     report.add_argument("--all-rows", action="store_true", help="Print every row on screen")
     report.set_defaults(handler=cmd_report)
 
+    web = sub.add_parser("web", help="Open the browser front end (search, compsets, forward view)")
+    web.add_argument("--host", default="127.0.0.1",
+                     help="Address to listen on (default this computer only; there is no sign-in)")
+    web.add_argument("--port", type=int, default=8765)
+    web.add_argument("--open", action="store_true", help="Open the page in the default browser")
+    web.set_defaults(handler=cmd_web)
+
 
 # -- handlers ----------------------------------------------------------------------------------------------------------
 
@@ -255,6 +262,24 @@ def cmd_report(args: argparse.Namespace) -> None:
     path = args.xlsx or REPORTS_DIR / f"{_slug(data.study_name)}_{date.today().isoformat()}.xlsx"
     write_report(report, path)
     print(f"Excel: {path}")
+
+
+def cmd_web(args: argparse.Namespace) -> None:
+    import threading
+    import webbrowser
+
+    import uvicorn
+
+    from hotelrate.apps.web import create_app
+
+    url = f"http://{'127.0.0.1' if args.host in ('0.0.0.0', '::') else args.host}:{args.port}"
+    if args.host not in ("127.0.0.1", "localhost", "::1"):
+        print(f"warning: listening on {args.host}; anyone who can reach this address can use the app",
+              file=sys.stderr)
+    print(f"Rate Shopper: {url}  (Ctrl+C to stop)")
+    if args.open:
+        threading.Timer(1.0, webbrowser.open, args=(url,)).start()
+    uvicorn.run(create_app(), host=args.host, port=args.port, log_level="warning")
 
 
 # -- helpers -----------------------------------------------------------------------------------------------------------

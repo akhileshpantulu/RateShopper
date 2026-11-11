@@ -107,27 +107,36 @@ class StudyRunner:
     async def run(
         self, study_id: int, *, trigger: str = "manual", location: str | None = None, calendar_only: bool = False
     ) -> RunSummary:
-        started = datetime.now(timezone.utc)
-        requests_before = self.collector.requests_sent
+        run_id = self.create_run(study_id, trigger=trigger, location=location)
+        return await self.execute(run_id, calendar_only=calendar_only)
+
+    def create_run(self, study_id: int, *, trigger: str = "manual", location: str | None = None) -> int:
+        """Record a run as started and return its id; `execute` does the collecting."""
         with session_scope(self.factory) as session:
-            study = session.get(Study, study_id)
-            if study is None:
+            if session.get(Study, study_id) is None:
                 raise ValueError(f"No study {study_id}")
-            members = [(member.hotel, member.role) for member in study_hotels(session, study)]
-            extra_dates = sorted({day for event in study_events(session, study) for day in event_days(event)})
             run = Run(
-                study_id=study.id,
+                study_id=study_id,
                 trigger=trigger,
                 status="running",
                 location=location,
                 collector_version=self.collector.version,
-                started_at=started,
+                started_at=datetime.now(timezone.utc),
                 requests_sent=0,
                 counts={},
             )
             session.add(run)
             session.flush()
-            run_id = run.id
+            return run.id
+
+    async def execute(self, run_id: int, *, calendar_only: bool = False) -> RunSummary:
+        requests_before = self.collector.requests_sent
+        with session_scope(self.factory) as session:
+            run = session.get(Run, run_id)
+            started = _aware(run.started_at) if run.started_at else datetime.now(timezone.utc)
+            study = session.get(Study, run.study_id)
+            members = [(member.hotel, member.role) for member in study_hotels(session, study)]
+            extra_dates = sorted({day for event in study_events(session, study) for day in event_days(event)})
             session.expunge_all()
 
         self.collector.add_raw_listener(self._keep_raw)
@@ -137,6 +146,10 @@ class StudyRunner:
             await asyncio.gather(
                 *(self._run_hotel(run_id, study, hotel, extra_dates, calendar_only) for hotel, _role in members)
             )
+        except BaseException as error:
+            self._finish(run_id, "failed", self.collector.requests_sent - requests_before,
+                         f"interrupted: {type(error).__name__}: {error}")
+            raise
         finally:
             self.collector.remove_raw_listener(self._keep_raw)
 
@@ -145,14 +158,7 @@ class StudyRunner:
         good = sum(counter["ok"] + counter["reused"] for counter in self._counts.values())
         status = "succeeded" if total and good == total else "partial" if good else "failed"
         requests = self.collector.requests_sent - requests_before
-        finished = datetime.now(timezone.utc)
-        with session_scope(self.factory) as session:
-            run = session.get(Run, run_id)
-            run.status = status
-            run.finished_at = finished
-            run.requests_sent = requests
-            run.counts = counts
-            run.error = "; ".join(self._errors[:20]) or None
+        finished = self._finish(run_id, status, requests, "; ".join(self._errors[:20]) or None)
         return RunSummary(
             run_id=run_id,
             status=status,
@@ -161,6 +167,17 @@ class StudyRunner:
             elapsed_seconds=round((finished - started).total_seconds(), 1),
             errors=list(self._errors),
         )
+
+    def _finish(self, run_id: int, status: str, requests: int, error: str | None) -> datetime:
+        finished = datetime.now(timezone.utc)
+        with session_scope(self.factory) as session:
+            run = session.get(Run, run_id)
+            run.status = status
+            run.finished_at = finished
+            run.requests_sent = requests
+            run.counts = {task: dict(counter) for task, counter in self._counts.items()}
+            run.error = error
+        return finished
 
     # -- per hotel ----------------------------------------------------------------------------------------------------
 

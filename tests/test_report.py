@@ -20,6 +20,9 @@ from hotelrate.report import (
 )
 from hotelrate.report.engine import (
     changes_by_month,
+    forward_averages,
+    forward_points,
+    forward_vs_compset,
     changes_by_window,
     event_response,
     parity,
@@ -81,6 +84,32 @@ def test_rate_position_by_weekday() -> None:
 def test_rate_position_without_target_is_empty() -> None:
     table = rate_position(_data(hotels=[COMP_A, COMP_B]), 1, by="month")
     assert table.rows == [] and table.total is None
+
+
+# -- forward averages -------------------------------------------------------------------------------------------------
+
+
+def test_forward_averages_by_hotel_and_comp_set_median() -> None:
+    table = forward_averages(_position_data(), 1)
+    by_hotel = {row[0]: row[2:] for row in table.rows}
+    # Windows start at the snapshot, 2027-01-01: 7 and 30 days hold 4-5 Jan, 60 days adds 1 Feb.
+    assert by_hotel["Target"][:4] == [210, 210, 240, 240]
+    assert by_hotel["Comp A"][:3] == [150, 150, 183.33]
+    assert by_hotel["Comp B"][:3] == [270, 270, 270]
+    # Daily comp medians: 200 (4 Jan), 220 (5 Jan), 250 (1 Feb, Comp A only).
+    assert table.total[:5] == ["Comp set median", None, 210, 210, 223.33]
+
+
+def test_forward_vs_compset_uses_dates_both_priced() -> None:
+    rows = {row[0]: row for row in forward_vs_compset(_position_data(), 1).rows}
+    assert rows["Next 7 days"][2:] == [210, 210, 0.0, 2]
+    assert rows["Next 60 days"][1] == D(2027, 1, 1)
+    assert rows["Next 60 days"][2:] == [240, 223.33, 0.0746, 3]
+
+
+def test_forward_points_count_priced_dates() -> None:
+    rows = {row[0]: row[2:] for row in forward_points(_position_data(), 1).rows}
+    assert rows["Comp B"][:3] == [2, 2, 2] and rows["Target"][:3] == [2, 2, 3]
 
 
 # -- event response ----------------------------------------------------------------------------------------------------

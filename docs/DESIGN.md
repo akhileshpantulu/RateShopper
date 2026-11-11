@@ -315,7 +315,7 @@ Changed at import, so the defaults match section 4:
 - **Quotes are for the requested dates.** Upstream moved Booking and Agoda stays forward by up to 12 days when the
   requested date had no price. The default is now 0, so a date with no price is reported as such.
 
-Still open, each needs a decision (section 12.8):
+Still open, each needs a decision (section 12.9):
 
 - **Logged-in sessions.** Upstream's `setup` signs in to each site so member-only prices appear. Member prices are not
   publicly listed rates. Proposal: do not sign in.
@@ -416,7 +416,25 @@ same day sent no requests.
 **Run size, measured:** about 5 seconds per request at the default pauses. An 11-hotel study with 12 sample weeks is
 about 850 requests, roughly 75 minutes.
 
-### 12.8 Further decisions needed
+### 12.8 Web front end (built 2026-11-11)
+
+`hotelrate-mcp web` serves a FastAPI app (`src/hotelrate/apps/web/`) on `127.0.0.1:8765`, with a single-page front
+end in plain HTML, CSS and JavaScript (no build step) in the house style. It covers hotel search, a live forward view
+of any hotel (one calendar call), compset creation and membership, starting a collection and following its
+progress, and the compset dashboard. That dashboard has forward averages over the next 7 to 365 days, the target
+against the comp-set median, a nightly-rate chart with the comp-set range and a hover tooltip, and every report table
+plus the Excel download.
+
+Forward averages: the average nightly rate over the priced check-in dates in each window, starting at the latest
+calendar snapshot. "Target vs comp set" uses only dates on which the target and at least one comp are priced; the
+per-hotel table uses each hotel's own priced dates, and its comp-set row averages the daily comp median. The Excel
+report gains the same three forward tables.
+
+This stands in for the phase 4 React app for one user. It has no sign-in and binds to localhost by default; a
+collection started in the browser runs inside the server process and stops if the server stops (the ledger keeps
+what was collected, so starting again resumes).
+
+### 12.9 Further decisions needed
 
 11. **Masking:** keep `STEALTH_MODE` off? Turning it on is a legal and terms-of-use question, not a technical one.
 12. **Sign-in:** confirm anonymous sessions only, no member prices.

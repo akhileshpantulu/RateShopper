@@ -18,6 +18,7 @@ from hotelrate.report.data import CalendarSnapshot, HotelInfo, OfferPoint, Repor
 WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 EVENT_BASELINE_DAYS = 14
 CHANGE_WINDOWS = (30, 60, 90)
+FORWARD_WINDOWS = (7, 30, 60, 90, 180, 365)
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,10 @@ def build_report(data: ReportData) -> Report:
     nights_list = data.calendar_nights or [1]
     main_nights = min(nights_list)
     tables = [overview(data), coverage(data)]
+    for nights in nights_list:
+        tables.append(forward_vs_compset(data, nights))
+        tables.append(forward_averages(data, nights))
+        tables.append(forward_points(data, nights))
     for nights in nights_list:
         tables.append(rate_position(data, nights, by="month"))
         tables.append(rate_position(data, nights, by="weekday"))
@@ -105,6 +110,86 @@ def coverage(data: ReportData) -> Table:
         ]
         rows.append(row)
     return Table("Data Coverage", columns, rows)
+
+
+# -- forward averages -------------------------------------------------------------------------------------------------
+
+
+def forward_as_of(data: ReportData, nights: int) -> date | None:
+    """The day forward windows start: the latest calendar snapshot among the study's hotels."""
+    days = [snapshot.fetch_date for (_, n), snapshot in data.calendars.items() if n == nights]
+    return max(days, default=None)
+
+
+def window_days(start: date, days: int) -> list[date]:
+    return [start + timedelta(days=offset) for offset in range(days)]
+
+
+def window_average(rates: dict[date, float], start: date, days: int) -> tuple[float | None, int]:
+    """Average nightly rate over the priced check-in dates in [start, start + days), and how many there were."""
+    values = [rates[day] for day in window_days(start, days) if day in rates]
+    return (round(mean(values), 2) if values else None), len(values)
+
+
+def comp_median_by_date(data: ReportData, nights: int) -> dict[date, float]:
+    comp_rates = [_rates(data, comp.id, nights) for comp in data.comps]
+    days = {day for rates in comp_rates for day in rates}
+    return {
+        day: median(rates[day] for rates in comp_rates if day in rates) for day in days
+    }
+
+
+def forward_averages(data: ReportData, nights: int) -> Table:
+    columns = [Column("Hotel"), Column("Role")] + [Column(f"Next {days} days", "money") for days in FORWARD_WINDOWS]
+    table = Table(f"Forward Average Rate ({_nights_label(nights)})", columns)
+    start = forward_as_of(data, nights)
+    if start is None:
+        return table
+    for hotel in data.hotels:
+        rates = _rates(data, hotel.id, nights)
+        table.rows.append([hotel.name, hotel.role.title(),
+                           *(window_average(rates, start, days)[0] for days in FORWARD_WINDOWS)])
+    if data.comps:
+        medians = comp_median_by_date(data, nights)
+        table.total = ["Comp set median", None, *(window_average(medians, start, days)[0] for days in FORWARD_WINDOWS)]
+    return table
+
+
+def forward_points(data: ReportData, nights: int) -> Table:
+    columns = [Column("Hotel"), Column("Role")] + [Column(f"Next {days} days", "int") for days in FORWARD_WINDOWS]
+    table = Table(f"Forward Average Priced Dates ({_nights_label(nights)})", columns)
+    start = forward_as_of(data, nights)
+    if start is None:
+        return table
+    for hotel in data.hotels:
+        rates = _rates(data, hotel.id, nights)
+        table.rows.append([hotel.name, hotel.role.title(),
+                           *(window_average(rates, start, days)[1] for days in FORWARD_WINDOWS)])
+    return table
+
+
+def forward_vs_compset(data: ReportData, nights: int) -> Table:
+    """Target against the comp-set median on the dates both are priced, for each forward window."""
+    columns = [
+        Column("Window"), Column("Snapshot", "date"), Column("Target", "money"), Column("Comp set median", "money"),
+        Column("Target vs median", "pct"), Column("Dates", "int"),
+    ]
+    table = Table(f"Target vs Comp Set, Forward ({_nights_label(nights)})", columns)
+    start, target = forward_as_of(data, nights), data.target
+    if start is None or target is None or not data.comps:
+        return table
+    target_rates = _rates(data, target.id, nights)
+    medians = comp_median_by_date(data, nights)
+    for days in FORWARD_WINDOWS:
+        matched = [day for day in window_days(start, days) if day in target_rates and day in medians]
+        if not matched:
+            table.rows.append([f"Next {days} days", start, None, None, None, 0])
+            continue
+        target_avg = mean(target_rates[day] for day in matched)
+        median_avg = mean(medians[day] for day in matched)
+        table.rows.append([f"Next {days} days", start, round(target_avg, 2), round(median_avg, 2),
+                           _ratio(target_avg, median_avg), len(matched)])
+    return table
 
 
 # -- 1. rate position --------------------------------------------------------------------------------------------------

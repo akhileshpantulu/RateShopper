@@ -140,6 +140,15 @@ def add_hotel_to_study(
     return member
 
 
+def remove_hotel_from_study(session: Session, study: Study, hotel_id: int) -> None:
+    """Take a hotel out of a study. Its stored observations stay; other studies may use them."""
+    member = session.get(StudyHotel, (study.id, hotel_id))
+    if member is None:
+        raise StudyError(f"Hotel {hotel_id} is not in {study.name}")
+    session.delete(member)
+    session.flush()
+
+
 def study_hotels(session: Session, study: Study) -> list[StudyHotel]:
     """Target first, then comps by name."""
     members = list(

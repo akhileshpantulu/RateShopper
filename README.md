@@ -10,9 +10,10 @@ section 12 covers what is built and what is still missing.
 
 ## Where it runs
 
-It is a Python program run from a terminal: on a laptop, an office PC or a server. It is not a website and cannot be
-hosted on GitHub Pages, which only serves static files and cannot run Python or call Google. A web app with sign-in
-is phase 4 of the plan (docs/DESIGN.md section 10).
+It is a Python program that runs on a laptop, an office PC or a server, with a browser front end it serves itself.
+It cannot be hosted on GitHub Pages, which only serves static files and cannot run Python or call Google. The front
+end has no sign-in yet, so by default it only accepts connections from the same computer; a shared, signed-in
+deployment is phase 4 of the plan (docs/DESIGN.md section 10).
 
 By default everything is stored in one SQLite file, `data/rateshopper.db`, next to where you run it, and Excel
 reports go to `data/reports/`. Several people sharing results need a shared PostgreSQL database instead
@@ -57,7 +58,22 @@ GOOGLE_HOTELS_COUNTRY=gb
 DEFAULT_CURRENCY=GBP
 ```
 
-## Run a rate shop
+## Open the web app
+
+```bash
+hotelrate-mcp web --open
+```
+
+This serves the app at http://127.0.0.1:8765 and opens it in your browser. Keep the terminal open while you use it.
+
+- **Hotels:** search Google Hotels, view any hotel's live forward rates for the next year (chart and 7 to 365-day
+  averages), and add hotels to a compset as the target or a comp.
+- **Compsets:** create a compset, collect calendars (about a minute) or a full collection with channel offers, and
+  watch progress. The forward view shows the target against the comp-set median for the next 30 and 365 days, a
+  chart of nightly rates with the comp-set range, forward averages by hotel, and every report table. Download the
+  Excel report from the same page.
+
+## Run a rate shop from the command line
 
 1. Create a study for the compset's city and currency:
 
