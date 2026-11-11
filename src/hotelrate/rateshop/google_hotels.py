@@ -203,7 +203,10 @@ class GoogleHotelsCollector:
         self.policy = policy or RequestPolicy(PolicyConfig.from_settings(self.settings))
         self.locale = plans.Locale(self.settings.google_hotels_language.lower(), self.settings.google_hotels_country.lower())
         self._today = today
-        self._transport = PolicyTransport(self.settings, self.policy, http_transport=http_transport, on_raw=on_raw)
+        self._raw_listeners: list[Callable[[RawResponse], None]] = [on_raw] if on_raw else []
+        self._transport = PolicyTransport(
+            self.settings, self.policy, http_transport=http_transport, on_raw=self._dispatch_raw
+        )
 
     async def __aenter__(self) -> GoogleHotelsCollector:
         return self
@@ -217,6 +220,17 @@ class GoogleHotelsCollector:
     @property
     def requests_sent(self) -> int:
         return self.policy.requests_started
+
+    def add_raw_listener(self, listener: Callable[[RawResponse], None]) -> None:
+        """Call `listener` with every raw answer (one per attempt), e.g. to store it next to the results."""
+        self._raw_listeners.append(listener)
+
+    def remove_raw_listener(self, listener: Callable[[RawResponse], None]) -> None:
+        self._raw_listeners.remove(listener)
+
+    def _dispatch_raw(self, raw: RawResponse) -> None:
+        for listener in list(self._raw_listeners):
+            listener(raw)
 
     # -- public calls -------------------------------------------------------------------------------------------------
 

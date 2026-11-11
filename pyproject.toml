@@ -31,6 +31,12 @@ dependencies = [
   "playwright>=1.52.0",
   "python-dateutil>=2.9.0",
   "rich>=13.9.0",
+  "sqlalchemy>=2.0.30",
+  "alembic>=1.13",
+  "openpyxl>=3.1",
+  "fastapi>=0.116.0",
+  "uvicorn>=0.35.0",
+  "tzdata; sys_platform == 'win32'",
 ]
 
 [project.urls]
@@ -48,8 +54,11 @@ worker = [
   "asyncpg>=0.30.0",
   "apscheduler>=3.11.0",
 ]
+postgres = [
+  "psycopg[binary]>=3.2",
+]
 all = [
-  "hotelrate-mcp[api,worker]",
+  "hotelrate-mcp[api,worker,postgres]",
 ]
 dev = [
   "ruff>=0.11.0",
@@ -66,6 +75,10 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"hotelrate.store" = ["migrations/script.py.mako"]
+"hotelrate.apps.web" = ["static/*"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"
@@ -78,3 +91,5 @@ select = ["E4", "E7", "E9", "F"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Lets test modules share helpers (tests/test_store.py reuses the Google replay helpers).
+pythonpath = ["."]

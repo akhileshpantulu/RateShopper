@@ -76,6 +76,14 @@ class Settings(BaseSettings):
     rateshop_retry_base_seconds: float = Field(default=30.0, ge=0, le=600)
     rateshop_block_pause_seconds: float = Field(default=300.0, ge=0, le=3600)
 
+    # Rate-shop store (docs/DESIGN.md section 5). SQLite needs no server; use postgresql+psycopg://... for a shared
+    # database. Run `hotelrate-mcp db upgrade` after changing it.
+    store_database_url: str = "sqlite:///data/rateshopper.db"
+    # The once-per-day rule counts days in this time zone.
+    store_timezone: str = "Europe/London"
+    # Raw Google answers kept in raw_responses: none, failures (parser and source failures) or all.
+    store_raw_responses: str = Field(default="failures", pattern="^(none|failures|all)$")
+
     @model_validator(mode="after")
     def _check_pause_range(self) -> "Settings":
         if self.rateshop_pause_max_seconds < self.rateshop_pause_min_seconds:

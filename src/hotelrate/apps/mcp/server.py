@@ -137,6 +137,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     shop = sub.add_parser("shop", help="Google Hotels price calendar and channel offers for one hotel")
     add_shop_arguments(shop)
 
+    # ── db / study / event / run / report (stored studies) ─────────────
+    from hotelrate.apps.mcp.cli.study import add_commands
+
+    add_commands(sub)
+
     # ── Top-level flags for backward compat ────────────────────────────
     # ``hotelrate-mcp --transport sse`` still works (command = None → serve)
     _add_serve_args(parser)
@@ -148,6 +153,10 @@ def main(argv: list[str] | None = None) -> None:
     """CLI entry point for ``hotelrate-mcp``."""
     args = _parse_args(argv)
 
+    handler = getattr(args, "handler", None)
+    if handler is not None:
+        handler(args)
+        return
     if args.command == "setup":
         from hotelrate.apps.mcp.cli import run_setup
 
