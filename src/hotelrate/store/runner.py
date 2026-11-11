@@ -271,6 +271,8 @@ class StudyRunner:
             # No channel showed a price: recorded, so "no offers" is not mistaken for "not collected".
             rows = [RateObservation(**common, available=False)]
         self._record_ok(claim.fetch_id, rows)
+        if result.latitude is not None and hotel.latitude is None:
+            self._place(hotel, result.latitude, result.longitude, result.address)
         return "ok"
 
     async def _fetch(self, fetch_id: int, task: str, hotel: Hotel, call):
@@ -371,6 +373,14 @@ class StudyRunner:
             )
             for raw in raws
         ]
+
+    def _place(self, hotel: Hotel, latitude: float, longitude: float | None, address: str | None) -> None:
+        with session_scope(self.factory) as session:
+            row = session.get(Hotel, hotel.id)
+            if row is not None and row.latitude is None:
+                row.latitude, row.longitude = latitude, longitude
+                row.address = row.address or address
+        hotel.latitude, hotel.longitude = latitude, longitude
 
     def _keep_raw(self, raw: RawResponse) -> None:
         fetch_id = _current_fetch.get()

@@ -29,6 +29,22 @@ class HotelCandidate(BaseModel):
     google_url: str | None = None
 
 
+class HotelLocation(BaseModel):
+    """Where a hotel is and what Google shows about it, from its prices page."""
+
+    source_id: str
+    name: str | None
+    address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    hotel_class: int | None = None
+    rating: float | None = None
+    reviews_count: int | None = None
+    phone: str | None = None
+    website: str | None = None
+    google_url: str | None = None
+
+
 class DayStatus(str, Enum):
     PRICED = "priced"
     # Inside the horizon Google prices, but no price shown: a possible sell-out.
@@ -137,6 +153,9 @@ class OffersResult(BaseModel):
     channels: int
     offers: list[OfferRow]
     google_url: str | None = None
+    address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     collector_version: str
     fetched_at: datetime = Field(default_factory=_now)
 

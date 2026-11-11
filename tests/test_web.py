@@ -120,6 +120,56 @@ def test_report_download_follows_house_layout(client: TestClient, tmp_path: Path
     assert check_layout(path) == []
 
 
+def test_locate_is_stored_and_reused(client: TestClient) -> None:
+    first = client.post(f"/api/hotels/{STRAND_PALACE}/locate").json()
+    assert first["cached"] is False and first["latitude"] == 51.511101 and first["address"].startswith("372 Strand")
+    sent = client.get("/api/status").json()["requests_sent"]
+    second = client.post(f"/api/hotels/{STRAND_PALACE}/locate").json()
+    assert second["cached"] is True and second["latitude"] == first["latitude"]
+    assert client.get("/api/status").json()["requests_sent"] == sent
+
+    # A later search shows the stored position for that hotel even though search answers carry none.
+    candidates = client.get("/api/search", params={"q": "The Savoy"}).json()["candidates"]
+    strand = next(c for c in candidates if c["source_id"] == STRAND_PALACE)
+    assert strand["located"] is True and strand["latitude"] == 51.511101
+    savoy = next(c for c in candidates if c["source_id"] == SAVOY)
+    assert savoy["located"] is False and savoy["latitude"] is None
+
+
+def test_compset_map_distances_and_nearby_sweep(client: TestClient) -> None:
+    study_id = client.post("/api/studies", json={"name": "Map", "city": "London", "currency": "GBP",
+                                                 "calendar_nights": [1], "offers_months": 0}).json()["id"]
+    # Adding a hotel places it on the map straight away (the replayed prices answer is Strand Palace's).
+    added = client.post(f"/api/studies/{study_id}/hotels",
+                        json={"source_id": SAVOY, "name": "The Savoy", "role": "target"}).json()
+    assert added["latitude"] == 51.511101
+
+    detail = client.get(f"/api/studies/{study_id}").json()
+    assert detail["hotels"][0]["distance_km"] == 0.0
+
+    sweep = client.get(f"/api/studies/{study_id}/nearby").json()
+    assert sweep["query"] == "hotels near The Savoy"
+    ids = [candidate["source_id"] for candidate in sweep["candidates"]]
+    assert SAVOY not in ids and STRAND_PALACE in ids
+
+    _wait_for(client, client.post(f"/api/studies/{study_id}/runs", json={"calendar_only": True}).json()["run_id"])
+    markers = client.get(f"/api/studies/{study_id}/dashboard").json()["map"]
+    assert markers[0]["role"] == "target" and markers[0]["latitude"] == 51.511101
+    # The recorded calendar starts on 10 Dec, a month after the test's "today", so only longer windows have prices.
+    assert markers[0]["next_30"] is None and markers[0]["next_365"] > 0
+    assert markers[0]["distance_km"] == 0.0
+
+
+def test_status_and_map_config(client: TestClient) -> None:
+    status = client.get("/api/status").json()
+    assert status["active_runs"] == [] and status["max_in_flight"] == 2
+    config = client.get("/api/config").json()
+    assert "{z}" in config["map_tile_url"] and "OpenStreetMap" in config["map_tile_attribution"]
+    assert config["map_tile_dark_filter"] is True
+    for asset in ("/static/map.js", "/static/vendor/leaflet/leaflet.js", "/static/vendor/leaflet/leaflet.css"):
+        assert client.get(asset).status_code == 200
+
+
 def test_events_and_missing_things(client: TestClient) -> None:
     event = client.post("/api/events", json={"city": "London", "event_date": "2026-12-31", "name": "New Year's Eve"})
     assert event.status_code == 201

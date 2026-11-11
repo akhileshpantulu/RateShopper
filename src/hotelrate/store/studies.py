@@ -12,7 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from hotelrate.rateshop.google_hotels import COLLECTOR_NAME
-from hotelrate.rateshop.models import HotelCandidate
+from hotelrate.rateshop.models import HotelCandidate, HotelLocation
 from hotelrate.store.models import Event, Hotel, Run, Study, StudyHotel
 
 CURRENCY_LENGTH = 3
@@ -101,12 +101,37 @@ def upsert_hotel(
     hotel.city = city or hotel.city
     hotel.country = country or hotel.country
     if candidate is not None:
-        hotel.star_class = candidate.hotel_class
-        hotel.rating = candidate.rating
-        hotel.reviews_count = candidate.reviews_count
-        hotel.latitude = candidate.latitude
-        hotel.longitude = candidate.longitude
-        hotel.google_url = candidate.google_url
+        # Search results often lack some fields (coordinates in particular); never erase what is known.
+        for field, value in (
+            ("star_class", candidate.hotel_class), ("rating", candidate.rating),
+            ("reviews_count", candidate.reviews_count), ("latitude", candidate.latitude),
+            ("longitude", candidate.longitude), ("google_url", candidate.google_url),
+        ):
+            if value is not None:
+                setattr(hotel, field, value)
+    session.flush()
+    return hotel
+
+
+def find_hotel(session: Session, source_id: str, collector: str = COLLECTOR_NAME) -> Hotel | None:
+    return session.scalar(select(Hotel).where(Hotel.collector == collector, Hotel.source_id == source_id))
+
+
+def set_hotel_location(session: Session, location: HotelLocation, collector: str = COLLECTOR_NAME) -> Hotel:
+    """Store where a hotel is, creating the hotel row if this is the first time it is seen."""
+    hotel = find_hotel(session, location.source_id, collector)
+    if hotel is None:
+        hotel = Hotel(collector=collector, source_id=location.source_id, name=location.name or location.source_id)
+        session.add(hotel)
+    for field, value in (
+        ("address", location.address), ("latitude", location.latitude), ("longitude", location.longitude),
+        ("star_class", location.hotel_class), ("rating", location.rating),
+        ("reviews_count", location.reviews_count), ("google_url", location.google_url),
+    ):
+        if value is not None:
+            setattr(hotel, field, value)
+    if location.name and not hotel.name:
+        hotel.name = location.name
     session.flush()
     return hotel
 

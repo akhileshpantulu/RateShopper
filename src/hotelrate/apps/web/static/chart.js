@@ -1,4 +1,4 @@
-/* Forward rate chart: one y-axis, thin 2px lines, a recessive grid, a neutral band for the comp-set range, direct labels
+/* Forward rate chart (colours come from CSS custom properties): one y-axis, thin 2px lines, a recessive grid, a neutral band for the comp-set range, direct labels
    at the line ends, and a crosshair tooltip (mouse, touch and arrow keys). Gaps in a line are dates without a price. */
 (function () {
   "use strict";
@@ -19,7 +19,11 @@
     const step = [1, 2, 2.5, 5, 10].map((f) => f * power).find((s) => s >= raw);
     const start = Math.floor(lo / step) * step;
     const ticks = [];
-    for (let v = start; v <= hi + step * 0.5; v += step) ticks.push(Math.round(v * 100) / 100);
+    // Keep adding steps until the top tick is at or above the highest value, so no line leaves the plot.
+    for (let v = start; ; v += step) {
+      ticks.push(Math.round(v * 100) / 100);
+      if (v >= hi) break;
+    }
     return ticks;
   }
 
@@ -141,7 +145,7 @@
                                visibility: "hidden" });
     svg.appendChild(cross);
     const dots = cfg.series.map((s) => {
-      const dot = el("circle", { r: 4, fill: s.color, stroke: "var(--ivory)", "stroke-width": 2, visibility: "hidden" });
+      const dot = el("circle", { r: 4, fill: s.color, stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" });
       svg.appendChild(dot);
       return dot;
     });

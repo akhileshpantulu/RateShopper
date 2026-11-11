@@ -39,6 +39,7 @@ from hotelrate.rateshop.models import (
     CalendarResult,
     DayStatus,
     HotelCandidate,
+    HotelLocation,
     OfferRow,
     OffersResult,
 )
@@ -360,7 +361,31 @@ class GoogleHotelsCollector:
             channels=len({row.channel for row in rows}),
             offers=rows,
             google_url=record.get("googleHotelsUrl"),
+            address=record.get("address"),
+            latitude=record.get("latitude"),
+            longitude=record.get("longitude"),
             collector_version=self.version,
+        )
+
+    async def locate(self, hotel: str) -> HotelLocation:
+        """The hotel's coordinates, address and listing details: one prices call for a stay 14 days out.
+
+        Search results do not carry per-hotel coordinates, so this is the way to place a hotel on a map.
+        """
+        stay = self._stay(None, 1, 2, self.settings.default_currency)
+        record = await self._run(plans.hotel(reference_of(hotel), stay, filters_of(), self.locale))
+        return HotelLocation(
+            source_id=record["propertyToken"],
+            name=record.get("name"),
+            address=record.get("address"),
+            latitude=record.get("latitude"),
+            longitude=record.get("longitude"),
+            hotel_class=record.get("hotelClass"),
+            rating=record.get("overallRating"),
+            reviews_count=record.get("reviewsCount"),
+            phone=record.get("phone"),
+            website=record.get("website"),
+            google_url=record.get("googleHotelsUrl"),
         )
 
     # -- internals ----------------------------------------------------------------------------------------------------
