@@ -315,7 +315,7 @@ Changed at import, so the defaults match section 4:
 - **Quotes are for the requested dates.** Upstream moved Booking and Agoda stays forward by up to 12 days when the
   requested date had no price. The default is now 0, so a date with no price is reported as such.
 
-Still open, each needs a decision (section 12.7):
+Still open, each needs a decision (section 12.8):
 
 - **Logged-in sessions.** Upstream's `setup` signs in to each site so member-only prices appear. Member prices are not
   publicly listed rates. Proposal: do not sign in.
@@ -336,12 +336,14 @@ Done:
 Next, in order:
 
 1. A `RateCollector` adapter over the imported collectors: typed outcomes (`Blocked`, `NotFound`, `ParseError`,
-   `SourceError`), confirmed URLs only, text-fallback offers rejected.
-2. The shared policy from section 4 (pauses, retry cap, block pause, once-per-day ledger, raw capture) wrapped
-   around every collector call.
-3. The section 5 schema as Alembic migrations, replacing `sql/schema.sql`.
+   `SourceError`), confirmed URLs only, text-fallback offers rejected. Done for Google Hotels (12.6); the imported
+   Playwright collectors are not adapted.
+2. ~~The shared policy from section 4 (pauses, retry cap, block pause, once-per-day ledger, raw capture) wrapped
+   around every collector call.~~ Done (12.6, 12.7).
+3. ~~The section 5 schema as Alembic migrations, replacing `sql/schema.sql`.~~ Done (12.7); `sql/schema.sql` stays for
+   the imported worker.
 4. ~~The Google Hotels price calendar through the `google-hotels` library.~~ Done, with channel offers (12.6).
-5. Recorded-response fixtures and a first live canary from an office machine.
+5. Recorded-response fixtures (done) and a first live canary from an office machine (not done).
 
 Phases 2 to 5 keep their goals. `apps/worker` and `apps/api` are the starting points for phases 2 and 4.
 
@@ -378,7 +380,43 @@ Open points from these runs:
 - **Cloud IP.** These calls succeeded from a cloud data-centre IP. The office worker (section 3) is still the
   expected main collector.
 
-### 12.7 Further decisions needed
+### 12.7 Store, study runs and report (built 2026-11-11)
+
+**Store** (`src/hotelrate/store/`): SQLAlchemy models and Alembic migration `0001` for `hotels`, `studies`,
+`study_hotels`, `events`, `runs`, `fetch_ledger`, `rate_observations` and `raw_responses` (section 5), plus
+`run_fetches`, which records every fetch a run used, including ones reused from earlier that day.
+`rate_observations` is append-only through database triggers (UPDATE, DELETE and, on PostgreSQL, TRUNCATE are
+rejected) rather than revoked privileges, so it holds in both databases and for every role. SQLite is the default for
+one person on one machine; PostgreSQL is supported and tested in CI. `jobs`, `job_log`, `canary_results` and
+`alerts_sent` wait for the phase 2 worker.
+
+**Runs** (`store/runner.py`): in-process, no queue yet. For each hotel, the price calendar for each study night
+length, then channel offers on the sample weeks (section 6) within the calendar's horizon plus every day of each event
+in the study's city. Every fetch claims its once-per-day ledger key first. An `ok` key is reused, a failed key is
+retried, and a key another process claimed in the last hour is skipped. Each fetch commits on its own. Raw answers
+are kept for failures by default (`STORE_RAW_RESPONSES`).
+
+**Report** (`src/hotelrate/report/`): the six sections of section 7 as functions over the stored data, rendered to
+the terminal and to a one-tab Excel file in the house format. Choices made where section 7 left room:
+
+- Rate position uses each hotel's latest calendar; a date counts when the target and at least one comp are priced.
+  The premium compares the target's average with the average of the daily comp medians.
+- Event response: the baseline is the same weekday 7 and 14 days either side, leaving out other event days.
+- Parity: each channel's lowest price is compared with the own site's lowest price on the same cancellation and
+  breakfast terms when both list rooms, otherwise with the own site's lowest price.
+- Room ladder: the median over sample dates of each room's lowest price, own-site rooms first. Some hotels list rate
+  plans as rooms (The Savoy: "SUPERIOR Queen ... FLEX RO", "... SAVER BB"), so the ladder shows them as Google does.
+- Sell-out signals: one row per hotel and date without a price inside the horizon, with how many hotels were dark
+  that date. Per-hotel counts are in the coverage table.
+
+**Live test** (cloud session, 3 London hotels, one sample week, default pauses): 21 requests in 110 seconds, every
+fetch succeeded, 321 to 332 priced calendar days per hotel and 35 to 42 booking channels per hotel. A second run the
+same day sent no requests.
+
+**Run size, measured:** about 5 seconds per request at the default pauses. An 11-hotel study with 12 sample weeks is
+about 850 requests, roughly 75 minutes.
+
+### 12.8 Further decisions needed
 
 11. **Masking:** keep `STEALTH_MODE` off? Turning it on is a legal and terms-of-use question, not a technical one.
 12. **Sign-in:** confirm anonymous sessions only, no member prices.
