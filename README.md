@@ -79,6 +79,9 @@ panels, monospace data, and maps.
   comp. Below: the forward rate chart, forward averages, collection with a live progress feed, events, and every
   report table with the Excel download.
 
+The map's layer switcher (top right) picks a muted basemap (default), a detailed one or none, and turns hotel labels,
+candidates and distance rings on or off; the choice is remembered in your browser.
+
 Search results carry no coordinates, so each hotel is located once with one Google call and the position is stored;
 afterwards it shows instantly. The map uses OpenStreetMap's standard tiles, darkened in the browser. They need no key
 and suit light internal use with attribution (OSM tile usage policy); set `MAP_TILE_URL` and `MAP_TILE_ATTRIBUTION` to
