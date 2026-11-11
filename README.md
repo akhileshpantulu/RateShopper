@@ -8,6 +8,15 @@ Status: phase 1 working from the command line. The code base is
 [UPSTREAM.md](UPSTREAM.md)). The design, the plan and the open decisions are in [docs/DESIGN.md](docs/DESIGN.md);
 section 12 covers what is built and what is still missing.
 
+## Open it in your browser (nothing to install)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/akhileshpantulu/RateShopper?quickstart=1)
+
+Click the button (or on GitHub: **Code**, **Codespaces**, **Create codespace on main**). The first time takes a few
+minutes to set up; after that the app starts by itself and its page opens in a new browser tab. Only you can open the
+page, behind your GitHub sign-in. To come back later, use the same button: it reopens your existing codespace with
+your compsets and collected rates. See [docs/CODESPACES.md](docs/CODESPACES.md) for idle timeouts and data retention.
+
 ## Where it runs
 
 It is a Python program that runs on a laptop, an office PC or a server, with a browser front end it serves itself.
