@@ -1,6 +1,7 @@
 {
   // GitHub Codespaces: open the Rate Shopper in a browser without installing anything.
-  // Creating the codespace installs the package; every time you open it, the web app starts and its page opens.
+  // Creating the codespace installs the package. Every time it starts it pulls the latest code from main and refreshes
+  // the install, so restarting the codespace is all it takes to update. Each time you open it, the web app starts.
   "name": "Rate Shopper",
   "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
   "containerEnv": {
@@ -8,6 +9,7 @@
     "DEFAULT_CURRENCY": "GBP"
   },
   "postCreateCommand": "pip install --no-cache-dir -e . && mkdir -p data",
+  "postStartCommand": "bash .devcontainer/update.sh",
   "postAttachCommand": {
     "rate-shopper": "bash .devcontainer/start-web.sh"
   },

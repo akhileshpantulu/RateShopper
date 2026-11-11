@@ -10,6 +10,11 @@ If the tab did not open (a pop-up blocker can stop it):
 
 The page address stays private: only you, signed in to GitHub, can open it.
 
+## Getting updates
+
+Each time the codespace starts it takes the latest version from `main`. To update one that is open: on GitHub, go to
+**Code**, **Codespaces**, open the **...** menu next to your codespace, choose **Stop codespace**, then open it again.
+
 ## Good to know
 
 - **Your data** (compsets, collected rates) is saved inside this codespace and is still there next time you open it
