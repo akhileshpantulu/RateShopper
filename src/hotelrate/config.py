@@ -84,6 +84,14 @@ class Settings(BaseSettings):
     # Raw Google answers kept in raw_responses: none, failures (parser and source failures) or all.
     store_raw_responses: str = Field(default="failures", pattern="^(none|failures|all)$")
 
+    # Map tiles for the web app's map view; the browser loads them directly from this server. The default is the
+    # OpenStreetMap standard layer: no key, fine for light use with attribution (operations.osmfoundation.org/policies/
+    # tiles). For heavier use point this at a commercial or self-hosted tile server.
+    map_tile_url: str = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    map_tile_attribution: str = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    # Darken light tiles in the browser so they match the console; set false for tiles that are already dark.
+    map_tile_dark_filter: bool = True
+
     @model_validator(mode="after")
     def _check_pause_range(self) -> "Settings":
         if self.rateshop_pause_max_seconds < self.rateshop_pause_min_seconds:

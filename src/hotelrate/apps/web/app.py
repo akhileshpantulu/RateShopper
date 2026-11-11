@@ -16,7 +16,7 @@ from collections import deque
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from starlette.background import BackgroundTask
 
 from hotelrate.config import Settings, get_settings
+from hotelrate.core.geo import distance_km
 from hotelrate.rateshop import CollectorError, DayStatus, GoogleHotelsCollector, HotelCandidate, NotFound
 from hotelrate.report import build_report, load_report_data, write_report
 from hotelrate.report.data import ReportData
@@ -42,6 +43,7 @@ from hotelrate.report.engine import (
     window_days,
 )
 from hotelrate.store import (
+    Hotel,
     Run,
     StudyError,
     StudyRunner,
@@ -49,12 +51,14 @@ from hotelrate.store import (
     add_hotel_to_study,
     check_schema,
     create_study,
+    find_hotel,
     get_study,
     list_studies,
     make_engine,
     remove_hotel_from_study,
     session_factory,
     session_scope,
+    set_hotel_location,
     study_events,
     study_hotels,
     study_runs,
@@ -170,6 +174,23 @@ def create_app(
             "forward_windows": list(FORWARD_WINDOWS),
             "seconds_per_request": round((settings.rateshop_pause_min_seconds + settings.rateshop_pause_max_seconds) / 2
                                          + 1, 1),
+            "map_tile_url": settings.map_tile_url,
+            "map_tile_attribution": settings.map_tile_attribution,
+            "map_tile_dark_filter": settings.map_tile_dark_filter,
+        }
+
+    @app.get("/api/status")
+    async def status():
+        collector_ = google()
+        return {
+            "utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "active_runs": [{"run_id": run_id, "study_id": live.study_id}
+                            for run_id, live in live_runs.items() if live.active],
+            "requests_sent": collector_.requests_sent,
+            "blocks_seen": collector_.policy.blocks_seen,
+            "max_in_flight": collector_.policy.config.max_in_flight,
+            "pause_seconds": [collector_.policy.config.pause_min_seconds, collector_.policy.config.pause_max_seconds],
+            "collector": collector_.version,
         }
 
     # -- hotels -------------------------------------------------------------------------------------------------------
@@ -180,7 +201,22 @@ def create_app(
             found = await google().resolve_hotel(q, city, max_candidates=limit)
         except CollectorError as error:
             raise _source_error(error) from error
-        return {"candidates": [candidate.model_dump(mode="json") for candidate in found]}
+        with session_scope(factory) as session:
+            return {"candidates": [_with_location(session, candidate.model_dump(mode="json")) for candidate in found]}
+
+    @app.post("/api/hotels/{source_id}/locate")
+    async def locate(source_id: str, refresh: bool = False):
+        """Coordinates and address of a hotel: stored ones when known, else one live prices call (then stored)."""
+        with session_scope(factory) as session:
+            hotel = find_hotel(session, source_id)
+            if hotel is not None and hotel.latitude is not None and not refresh:
+                return _hotel_location(hotel, cached=True)
+        try:
+            location = await google().locate(source_id)
+        except CollectorError as error:
+            raise _source_error(error) from error
+        with session_scope(factory) as session:
+            return _hotel_location(set_hotel_location(session, location), cached=False)
 
     @app.get("/api/hotels/{source_id}/calendar")
     async def hotel_calendar(
@@ -241,16 +277,17 @@ def create_app(
     async def study_detail(study_id: int):
         with session_scope(factory) as session:
             study = _guard(lambda: get_study(session, study_id), status=404)
+            members = study_hotels(session, study)
+            target = next((member.hotel for member in members if member.role == "target"), None)
             return {
                 **_study_json(study),
                 "hotels": [
                     {
-                        "id": member.hotel.id, "name": member.hotel.name, "role": member.role,
-                        "source_id": member.hotel.source_id, "hotel_class": member.hotel.star_class,
-                        "rating": member.hotel.rating, "reviews_count": member.hotel.reviews_count,
-                        "google_url": member.hotel.google_url,
+                        **_hotel_location(member.hotel),
+                        "id": member.hotel.id, "role": member.role,
+                        "distance_km": _distance(target, member.hotel),
                     }
-                    for member in study_hotels(session, study)
+                    for member in members
                 ],
                 "events": [
                     {"id": event.id, "name": event.name, "event_date": event.event_date.isoformat(),
@@ -271,7 +308,45 @@ def create_app(
             hotel = upsert_hotel(session, source_id=body.source_id, name=body.name, city=study.city,
                                  country=study.country, candidate=candidate)
             _guard(lambda: add_hotel_to_study(session, study, hotel, role=body.role, input_name=body.name))
-            return {"id": hotel.id, "name": hotel.name, "role": body.role}
+            hotel_id, located = hotel.id, hotel.latitude is not None
+        if not located:
+            # Place it on the map now; a failure here never blocks adding the hotel.
+            try:
+                location = await google().locate(body.source_id)
+                with session_scope(factory) as session:
+                    set_hotel_location(session, location)
+            except CollectorError as error:
+                logger.warning("could not locate %s: %s", body.source_id, error)
+        with session_scope(factory) as session:
+            hotel = session.get(Hotel, hotel_id)
+            return {**_hotel_location(hotel), "id": hotel.id, "role": body.role}
+
+    @app.get("/api/studies/{study_id}/nearby")
+    async def nearby(study_id: int, limit: int = Query(12, ge=1, le=20)):
+        """Google's hotels near the target: candidates for the comp set, with stored coordinates where known."""
+        with session_scope(factory) as session:
+            study = _guard(lambda: get_study(session, study_id), status=404)
+            members = study_hotels(session, study)
+            target = next((member.hotel for member in members if member.role == "target"), None)
+            if target is None:
+                raise HTTPException(400, "Add a target hotel first")
+            in_study = {member.hotel.source_id for member in members}
+            query, city = f"hotels near {target.name}", study.city
+        try:
+            found = await google().resolve_hotel(query, city, max_candidates=limit)
+        except CollectorError as error:
+            raise _source_error(error) from error
+        with session_scope(factory) as session:
+            target = find_hotel(session, target.source_id)
+            rows = []
+            for candidate in found:
+                if candidate.source_id in in_study:
+                    continue
+                row = _with_location(session, candidate.model_dump(mode="json"))
+                stored = find_hotel(session, candidate.source_id)
+                row["distance_km"] = _distance(target, stored)
+                rows.append(row)
+            return {"query": query, "candidates": rows}
 
     @app.delete("/api/studies/{study_id}/hotels/{hotel_id}", status_code=204)
     async def remove_hotel(study_id: int, hotel_id: int):
@@ -330,7 +405,27 @@ def create_app(
             study = _guard(lambda: get_study(session, study_id), status=404)
             data = load_report_data(session, study)
         nights = nights or min(data.calendar_nights or [1])
+        with session_scope(factory) as session:
+            hotels = {hotel.id: session.get(Hotel, hotel.id) for hotel in data.hotels}
+            target_row = hotels.get(data.target.id) if data.target else None
+            start = forward_as_of(data, nights)
+            target_rates = data.calendars.get((data.target.id, nights)).rates if data.target and \
+                (data.target.id, nights) in data.calendars else {}
+            target_30 = window_average(target_rates, start, 30)[0] if start else None
+            markers = []
+            for info in data.hotels:
+                row = hotels[info.id]
+                rates = data.calendars[(info.id, nights)].rates if (info.id, nights) in data.calendars else {}
+                next_30 = window_average(rates, start, 30)[0] if start else None
+                markers.append({
+                    **_hotel_location(row), "id": info.id, "role": info.role,
+                    "distance_km": _distance(target_row, row),
+                    "next_30": next_30,
+                    "next_365": window_average(rates, start, 365)[0] if start else None,
+                    "vs_target_30": round(next_30 / target_30 - 1, 4) if next_30 and target_30 else None,
+                })
         return {
+            "map": markers,
             "currency": data.currency,
             "nights": nights,
             "nights_options": data.calendar_nights,
@@ -366,6 +461,31 @@ def create_app(
 
 
 # -- helpers -----------------------------------------------------------------------------------------------------------
+
+
+def _hotel_location(hotel: Hotel, *, cached: bool | None = None) -> dict[str, Any]:
+    data = {
+        "source_id": hotel.source_id, "name": hotel.name, "address": hotel.address, "latitude": hotel.latitude,
+        "longitude": hotel.longitude, "hotel_class": hotel.star_class, "rating": hotel.rating,
+        "reviews_count": hotel.reviews_count, "google_url": hotel.google_url,
+    }
+    if cached is not None:
+        data["cached"] = cached
+    return data
+
+
+def _with_location(session: Session, candidate: dict[str, Any]) -> dict[str, Any]:
+    stored = find_hotel(session, candidate["source_id"])
+    if stored is not None and stored.latitude is not None:
+        candidate.update(latitude=stored.latitude, longitude=stored.longitude, address=stored.address)
+    candidate["located"] = candidate.get("latitude") is not None
+    return candidate
+
+
+def _distance(origin: Hotel | None, other: Hotel | None) -> float | None:
+    if origin is None or other is None or None in (origin.latitude, origin.longitude, other.latitude, other.longitude):
+        return None
+    return round(distance_km(origin.latitude, origin.longitude, other.latitude, other.longitude), 2)
 
 
 def _forward_rows(rates: dict[date, float], start: date) -> list[dict[str, Any]]:

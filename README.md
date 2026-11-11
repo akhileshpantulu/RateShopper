@@ -66,12 +66,23 @@ hotelrate-mcp web --open
 
 This serves the app at http://127.0.0.1:8765 and opens it in your browser. Keep the terminal open while you use it.
 
-- **Hotels:** search Google Hotels, view any hotel's live forward rates for the next year (chart and 7 to 365-day
-  averages), and add hotels to a compset as the target or a comp.
-- **Compsets:** create a compset, collect calendars (about a minute) or a full collection with channel offers, and
-  watch progress. The forward view shows the target against the comp-set median for the next 30 and 365 days, a
-  chart of nightly rates with the comp-set range, forward averages by hotel, and every report table. Download the
-  Excel report from the same page.
+It is laid out as a dark analyst console: a status bar (UTC clock, collector activity, requests sent, blocks seen),
+panels, monospace data, and maps.
+
+- **Search:** query Google Hotels by name or "hotels near ...". Results appear on a map as each one is located, and
+  can be opened or added to a compset as the target or a comp.
+- **Hotel profile:** live forward rates for the next year (chart and 7 to 365-day averages), position on the map,
+  address and listing details.
+- **Compsets:** headline figures (target and comp-set median for the next 30 days, the gap at 30 and 365 days), an
+  area map of the target and comps with 500 m, 1 km and 2 km rings, a roster with distance from the target, and
+  **Sweep nearby**, which finds Google's hotels near the target, maps them with their distance and adds any as a
+  comp. Below: the forward rate chart, forward averages, collection with a live progress feed, events, and every
+  report table with the Excel download.
+
+Search results carry no coordinates, so each hotel is located once with one Google call and the position is stored;
+afterwards it shows instantly. The map uses OpenStreetMap's standard tiles, darkened in the browser. They need no key
+and suit light internal use with attribution (OSM tile usage policy); set `MAP_TILE_URL` and `MAP_TILE_ATTRIBUTION` to
+use a commercial or self-hosted tile server instead, and `MAP_TILE_DARK_FILTER=false` if its tiles are already dark.
 
 ## Run a rate shop from the command line
 

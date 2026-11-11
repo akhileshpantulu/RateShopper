@@ -137,6 +137,18 @@ def test_study_rules(factory) -> None:
         assert get_study(session, "Test").id == get_study(session, str(study.id)).id
 
 
+def test_search_details_never_erase_a_stored_position(factory) -> None:
+    from hotelrate.rateshop import HotelCandidate, HotelLocation
+    from hotelrate.store import set_hotel_location
+
+    with session_scope(factory) as session:
+        set_hotel_location(session, HotelLocation(source_id=SAVOY, name="The Savoy", latitude=51.51, longitude=-0.12,
+                                                  address="Strand"))
+        hotel = upsert_hotel(session, source_id=SAVOY, name="The Savoy",
+                             candidate=HotelCandidate(source_id=SAVOY, name="The Savoy", rating=4.7))
+        assert (hotel.latitude, hotel.longitude, hotel.address, hotel.rating) == (51.51, -0.12, "Strand", 4.7)
+
+
 def test_event_import_is_all_or_nothing(factory, tmp_path: Path) -> None:
     good = tmp_path / "good.csv"
     good.write_text("city,country,event_date,end_date,name\nLondon,UK,2026-12-31,,New Year's Eve\n"

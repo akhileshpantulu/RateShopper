@@ -177,6 +177,27 @@ async def test_channel_offers_lists_every_channel() -> None:
     assert all(row.room is None and row.rate_plan is None for row in offers.offers)
 
 
+async def test_offers_and_locate_carry_coordinates() -> None:
+    recorder = Recorder()
+    async with _collector(recorder) as collector:
+        offers = await collector.channel_offers(STRAND_PALACE, check_in=START)
+        place = await collector.locate(STRAND_PALACE)
+
+    assert (offers.latitude, offers.longitude) == (51.511101, -0.1208727)
+    assert offers.address == "372 Strand, London WC2R 0JJ"
+    assert place.source_id == STRAND_PALACE and place.name == "Strand Palace"
+    assert (place.latitude, place.longitude, place.address) == (offers.latitude, offers.longitude, offers.address)
+    assert place.hotel_class == 4 and recorder.rpc_ids == ["lvkpBc", "lvkpBc"]
+
+
+def test_distance() -> None:
+    from hotelrate.core.geo import distance_km
+
+    # Strand Palace to The Savoy is about 150 m along the Strand.
+    assert distance_km(51.511101, -0.1208727, 51.5101, -0.1203) == pytest.approx(0.12, abs=0.02)
+    assert distance_km(51.5, -0.12, 51.5, -0.12) == 0
+
+
 def test_rate_plan_is_derived_from_flags() -> None:
     assert derive_rate_plan(True, True) == "Free cancellation, breakfast"
     assert derive_rate_plan(False, False) == "Standard cancellation, room only"

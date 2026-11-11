@@ -419,7 +419,8 @@ about 850 requests, roughly 75 minutes.
 ### 12.8 Web front end (built 2026-11-11)
 
 `hotelrate-mcp web` serves a FastAPI app (`src/hotelrate/apps/web/`) on `127.0.0.1:8765`, with a single-page front
-end in plain HTML, CSS and JavaScript (no build step) in the house style. It covers hotel search, a live forward view
+end in plain HTML, CSS and JavaScript (no build step). At the owner's request it is laid out as a dark analyst
+console with map views rather than in the house document style; the Excel export keeps the house style. It covers hotel search, a live forward view
 of any hotel (one calendar call), compset creation and membership, starting a collection and following its
 progress, and the compset dashboard. That dashboard has forward averages over the next 7 to 365 days, the target
 against the comp-set median, a nightly-rate chart with the comp-set range and a hover tooltip, and every report table
@@ -429,6 +430,15 @@ Forward averages: the average nightly rate over the priced check-in dates in eac
 calendar snapshot. "Target vs comp set" uses only dates on which the target and at least one comp are priced; the
 per-hotel table uses each hotel's own priced dates, and its comp-set row averages the daily comp median. The Excel
 report gains the same three forward tables.
+
+**Maps.** Leaflet 1.9.4 (BSD-2) is vendored under `static/vendor/leaflet/`, so no code loads from a CDN. Google
+search answers carry only a shared viewport box, not per-hotel coordinates (checked on the recorded answers), so a
+hotel is placed with one prices call (`GoogleHotelsCollector.locate`) and its coordinates and address are stored on
+the `hotels` row; channel-offers fetches fill them in too. Search results are located one at a time after they are
+listed, and the stored position is reused from then on. Distances are great-circle (haversine). **Sweep nearby**
+runs Google's own "hotels near <target>" search and maps the results as candidates. Tiles default to OpenStreetMap's
+standard layer, darkened with a CSS filter; CARTO's dark basemap was tried first and now returns an "API key
+required" watermark.
 
 This stands in for the phase 4 React app for one user. It has no sign-in and binds to localhost by default; a
 collection started in the browser runs inside the server process and stops if the server stops (the ledger keeps

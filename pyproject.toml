@@ -77,7 +77,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "hotelrate.store" = ["migrations/script.py.mako"]
-"hotelrate.apps.web" = ["static/*"]
+"hotelrate.apps.web" = ["static/*", "static/vendor/leaflet/*", "static/vendor/leaflet/images/*"]
 
 [tool.ruff]
 line-length = 100
