@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import subprocess
 import tempfile
 from collections import deque
 from collections.abc import AsyncIterator
@@ -20,7 +21,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -156,6 +157,16 @@ def create_app(
 
     app = FastAPI(title="Rate Shopper", lifespan=lifespan)
     app.mount("/static", StaticFiles(directory=STATIC), name="static")
+    build = _build_id()
+
+    @app.middleware("http")
+    async def revalidate_pages(request: Request, call_next):
+        # The page and its scripts change with every update: make browsers check for a new version each time
+        # instead of reusing a cached copy (they still get a fast 304 when nothing changed).
+        response = await call_next(request)
+        if request.url.path == "/" or request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
     def google() -> GoogleHotelsCollector:
         return shared["google"]
@@ -194,6 +205,7 @@ def create_app(
             "max_in_flight": collector_.policy.config.max_in_flight,
             "pause_seconds": [collector_.policy.config.pause_min_seconds, collector_.policy.config.pause_max_seconds],
             "collector": collector_.version,
+            "build": build,
         }
 
     # -- hotels -------------------------------------------------------------------------------------------------------
@@ -464,6 +476,20 @@ def create_app(
 
 
 # -- helpers -----------------------------------------------------------------------------------------------------------
+
+
+def _build_id() -> str:
+    """Which version is running: the git commit when available, else the package version."""
+    try:
+        commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=Path(__file__).parent, capture_output=True,
+                                text=True, timeout=5, check=True).stdout.strip()
+        if commit:
+            return commit
+    except (OSError, subprocess.SubprocessError):
+        pass
+    from hotelrate import __version__
+
+    return f"v{__version__}"
 
 
 def _hotel_location(hotel: Hotel, *, cached: bool | None = None) -> dict[str, Any]:

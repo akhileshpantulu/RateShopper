@@ -127,6 +127,7 @@
         document.getElementById("collector-dot").classList.toggle("active", active);
         document.getElementById("req-count").textContent = status.requests_sent;
         document.getElementById("block-count").textContent = status.blocks_seen;
+        document.getElementById("build-id").textContent = status.build;
       } catch (_) {
         document.getElementById("collector-state").textContent = "OFFLINE";
       }

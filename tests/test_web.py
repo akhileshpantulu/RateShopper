@@ -162,7 +162,9 @@ def test_compset_map_distances_and_nearby_sweep(client: TestClient) -> None:
 
 def test_status_and_map_config(client: TestClient) -> None:
     status = client.get("/api/status").json()
-    assert status["active_runs"] == [] and status["max_in_flight"] == 2
+    assert status["active_runs"] == [] and status["max_in_flight"] == 2 and status["build"]
+    for path in ("/", "/static/map.js"):
+        assert client.get(path).headers["cache-control"] == "no-cache"
     config = client.get("/api/config").json()
     assert config["map_style_url"].startswith("https://tiles.openfreemap.org/styles/")
     assert "OpenStreetMap" in config["map_attribution"] and "OpenFreeMap" in config["map_attribution"]
